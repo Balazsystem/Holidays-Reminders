@@ -527,6 +527,95 @@ body::before {
   gap: 4px;
 }
 
+
+/* ════════════════════════════════════════
+   ROLE / ADMIN LOGIN
+════════════════════════════════════════ */
+.role-chip {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(79,142,247,0.12);
+  border: 1px solid rgba(79,142,247,0.24);
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+.topbar-right { position: relative; }
+.profile-menu {
+  position: absolute;
+  right: 0;
+  top: 44px;
+  width: 220px;
+  background: rgba(26,34,54,0.98);
+  border: 1px solid rgba(79,142,247,.22);
+  border-radius: 16px;
+  padding: 8px;
+  z-index: 1200;
+  box-shadow: 0 18px 45px rgba(0,0,0,0.45);
+  display: none;
+  backdrop-filter: blur(14px);
+}
+.profile-menu.open { display: block; animation: dropdownIn .16s ease; }
+.profile-menu-head {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.profile-menu-head strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+}
+.profile-menu-head span {
+  color: var(--text2);
+  font-size: 11.5px;
+  display: block;
+  margin-top: 3px;
+}
+.profile-menu-btn {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text2);
+  padding: 10px 11px;
+  border-radius: 11px;
+  text-align: left;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.profile-menu-btn:hover {
+  background: rgba(79,142,247,0.14);
+  color: var(--text);
+}
+.profile-menu-btn.danger:hover {
+  background: rgba(248,113,113,0.14);
+  color: var(--red);
+}
+.hidden-admin { display: none !important; }
+.admin-only { display: none !important; }
+body.admin-mode .admin-only { display: flex !important; }
+body.admin-mode .hidden-admin { display: flex !important; }
+body.admin-mode #adminLoginBtn { display: none !important; }
+
+.clear-filter-btn {
+  background: rgba(248,113,113,0.10);
+  color: var(--red);
+  border: 1px solid rgba(248,113,113,0.22);
+}
+.clear-filter-btn:hover {
+  background: rgba(248,113,113,0.16);
+  color: #fecaca;
+}
+
 /* ════════════════════════════════════════
    EVENT LIST
 ════════════════════════════════════════ */
@@ -797,6 +886,7 @@ body::before {
   .view-hero { margin: 10px 15px;}
   .view-grid {gap:10px}
   .view-box { padding: 10px; }
+  .ev-acts {display: none;}
 
 }
 
@@ -855,7 +945,20 @@ body::before {
     </div>
     <div class="topbar-right">
       <div class="topbar-date"><i class="fa-regular fa-calendar"></i><span id="todayStr"></span></div>
-      <div class="avatar" title="IT Team">IT</div>
+      <div class="role-chip" id="roleChip">Viewer</div>
+      <div class="avatar" title="Admin Login" onclick="toggleProfileMenu(event)">IT</div>
+      <div class="profile-menu" id="profileMenu">
+        <div class="profile-menu-head">
+          <strong id="profileRoleTitle">Viewer Mode</strong>
+          <span id="profileRoleSub">View + Add access</span>
+        </div>
+        <button class="profile-menu-btn" id="adminLoginBtn" onclick="openAdminLogin()">
+          <i class="fa-solid fa-lock"></i> Admin Login
+        </button>
+        <button class="profile-menu-btn danger hidden-admin" id="adminLogoutBtn" onclick="adminLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1042,6 +1145,13 @@ body::before {
 
         <div class="filter-box">
           <div class="filter-label">&nbsp;</div>
+          <button class="btn clear-filter-btn" onclick="clearFilters()">
+            <i class="fa-solid fa-filter-circle-xmark"></i> Clear Filters
+          </button>
+        </div>
+
+        <div class="filter-box">
+          <div class="filter-label">&nbsp;</div>
           <button class="btn btn-primary" onclick="openModal()">
             <i class="fa-solid fa-plus"></i> Add Occasion
           </button>
@@ -1101,6 +1211,32 @@ body::before {
 </div>
 
 <div class="toast-wrap" id="toastWrap"></div>
+
+<!-- ══════════════ ADMIN LOGIN MODAL ══════════════ -->
+<div class="overlay" id="adminOverlay" onclick="closeAdminOutside(event)">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🔐 Admin Login</div>
+      <div class="modal-x" onclick="closeAdminLogin()"><i class="fa-solid fa-xmark"></i></div>
+    </div>
+
+    <div class="fg">
+      <label class="fl">Username</label>
+      <input class="fi" type="text" id="adminUser" placeholder="Enter username" autocomplete="username" />
+    </div>
+
+    <div class="fg">
+      <label class="fl">Password</label>
+      <input class="fi" type="password" id="adminPass" placeholder="Enter password" autocomplete="current-password" />
+    </div>
+
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeAdminLogin()">Cancel</button>
+      <button class="btn btn-primary" onclick="adminLogin()"><i class="fa-solid fa-unlock"></i> Login</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════ VIEW OCCASION MODAL ══════════════ -->
 <div class="overlay" id="viewOverlay" onclick="closeViewOutside(event)">
   <div class="modal view-modal">
@@ -1153,7 +1289,7 @@ body::before {
     </div>
 
     <div class="view-actions">
-      <button class="btn btn-primary" id="viewEditBtn"><i class="fa-solid fa-pen"></i> Edit Occasion</button>
+      <button class="btn btn-primary admin-only" id="viewEditBtn"><i class="fa-solid fa-pen"></i> Edit Occasion</button>
       <button class="btn btn-ghost" onclick="closeViewModal()">Close</button>
     </div>
   </div>
@@ -1183,6 +1319,7 @@ function catLabel(c) {
 let events = [];
 let nxtId = 1;
 let editId = null;
+let currentRole = localStorage.getItem('role') || 'viewer';
 
 async function loadEvents() {
 
@@ -1372,7 +1509,7 @@ function renderList() {
       <div class="ev-cat"><span class="badge cat-${ev.cat}">${catLabel(ev.cat)}</span></div>
       <div class="ev-stat"><span class="badge status-${st}">${slbl}</span></div>
       <div class="ev-days" style="color:${dcol}">${dlbl}</div>
-      <div class="ev-acts">
+      <div class="ev-acts admin-only">
         <div class="act-btn edit" title="Edit" onclick="event.stopPropagation(); editEvent(${ev.id})"><i class="fa-solid fa-pen"></i></div>
         <div class="act-btn del"  title="Delete" onclick="event.stopPropagation(); deleteEvent(${ev.id})"><i class="fa-solid fa-trash"></i></div>
       </div>
@@ -1465,6 +1602,7 @@ async function saveEvent() {
     toast('✅', editId ? 'Occasion updated!' : 'Occasion added!', 'var(--green)');
     closeModal();
     initCustomDropdowns();
+applyRoleUI();
 loadEvents();
 
   } catch (err) {
@@ -1472,9 +1610,19 @@ loadEvents();
     toast('❌','Failed to save occasion.','var(--red)');
   }
 }
-function editEvent(id) { openModal(events.find(e=>e.id===id)); }
+function editEvent(id) {
+  if (!isAdmin()) {
+    toast('🔒','Admin login required to edit.','var(--orange)');
+    return;
+  }
+  openModal(events.find(e=>e.id===id));
+}
 
 async function deleteEvent(id) {
+  if (!isAdmin()) {
+    toast('🔒','Admin login required to delete.','var(--orange)');
+    return;
+  }
   const row = document.getElementById('row-' + id);
 
   if (row) {
@@ -1492,6 +1640,7 @@ async function deleteEvent(id) {
 
     toast('🗑️','Event removed.','var(--red)');
     initCustomDropdowns();
+applyRoleUI();
 loadEvents();
 
   } catch (err) {
@@ -1511,6 +1660,126 @@ function toast(icon, msg, color='var(--accent)') {
   setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(),320); },3000);
 }
 
+
+
+/* ════════════════════════════════
+   ROLE / ADMIN ACCESS
+════════════════════════════════ */
+function isAdmin() {
+  return currentRole === 'admin';
+}
+
+function applyRoleUI() {
+  document.body.classList.toggle('admin-mode', isAdmin());
+
+  const roleChip = document.getElementById('roleChip');
+  const roleTitle = document.getElementById('profileRoleTitle');
+  const roleSub = document.getElementById('profileRoleSub');
+  const avatar = document.querySelector('.avatar');
+
+  if (isAdmin()) {
+    roleChip.textContent = 'Admin';
+    roleChip.style.color = 'var(--green)';
+    roleChip.style.background = 'rgba(52,211,153,0.12)';
+    roleChip.style.borderColor = 'rgba(52,211,153,0.25)';
+    roleTitle.textContent = 'Admin Mode';
+    roleSub.textContent = 'Add + Edit + Delete access';
+    avatar.title = 'Admin Mode';
+  } else {
+    roleChip.textContent = 'Viewer';
+    roleChip.style.color = 'var(--accent)';
+    roleChip.style.background = 'rgba(79,142,247,0.12)';
+    roleChip.style.borderColor = 'rgba(79,142,247,0.24)';
+    roleTitle.textContent = 'Viewer Mode';
+    roleSub.textContent = 'View + Add access';
+    avatar.title = 'Admin Login';
+  }
+}
+
+function toggleProfileMenu(event) {
+  event.stopPropagation();
+  document.getElementById('profileMenu').classList.toggle('open');
+}
+
+function openAdminLogin() {
+  document.getElementById('profileMenu').classList.remove('open');
+  document.getElementById('adminUser').value = '';
+  document.getElementById('adminPass').value = '';
+  document.getElementById('adminOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('adminUser').focus(), 120);
+}
+
+function closeAdminLogin() {
+  document.getElementById('adminOverlay').classList.remove('open');
+}
+
+function closeAdminOutside(e) {
+  if (e.target === document.getElementById('adminOverlay')) closeAdminLogin();
+}
+
+function adminLogin() {
+  const username = document.getElementById('adminUser').value.trim();
+  const password = document.getElementById('adminPass').value.trim();
+
+  if (username === 'admin' && password === 'krbs@0124') {
+    currentRole = 'admin';
+    localStorage.setItem('role', 'admin');
+    applyRoleUI();
+    renderList();
+    closeAdminLogin();
+    toast('✅','Admin mode enabled.','var(--green)');
+  } else {
+    toast('❌','Invalid admin credentials.','var(--red)');
+  }
+}
+
+function adminLogout() {
+  currentRole = 'viewer';
+  localStorage.removeItem('role');
+  document.getElementById('profileMenu').classList.remove('open');
+  applyRoleUI();
+  renderList();
+  toast('👁️','Viewer mode enabled.','var(--accent)');
+}
+
+function clearFilters() {
+  setCustomSelectValue('statusSel', 'upcoming', 'Upcoming');
+  setCustomSelectValue('monthSel', 'all', 'All Months');
+  setCustomSelectValue('categorySel', 'all', 'All Categories');
+  setCustomSelectValue('limitSel', '5', 'Show 5');
+  renderList();
+  toast('🧹','Filters cleared.','var(--accent)');
+}
+
+function setCustomSelectValue(selectId, value, label) {
+  const hiddenSelect = document.getElementById(selectId);
+  if (hiddenSelect) hiddenSelect.value = value;
+
+  const dropdown = document.querySelector(`.custom-select[data-select="${selectId}"]`);
+  if (!dropdown) return;
+
+  const trigger = dropdown.querySelector('.custom-select-trigger');
+  const options = dropdown.querySelectorAll('.custom-option');
+
+  if (trigger) trigger.textContent = label;
+  options.forEach(option => {
+    option.classList.toggle('selected', option.dataset.value === value);
+  });
+}
+
+document.addEventListener('click', function(e) {
+  const profileMenu = document.getElementById('profileMenu');
+  const avatar = document.querySelector('.avatar');
+  if (profileMenu && avatar && !profileMenu.contains(e.target) && !avatar.contains(e.target)) {
+    profileMenu.classList.remove('open');
+  }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('adminOverlay')?.classList.contains('open')) {
+    adminLogin();
+  }
+});
 
 /* ════════════════════════════════
    CUSTOM DROPDOWNS
@@ -1578,6 +1847,7 @@ document.getElementById('todayStr').textContent =
   new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
 
 initCustomDropdowns();
+applyRoleUI();
 loadEvents();
 </script>
 </body>
