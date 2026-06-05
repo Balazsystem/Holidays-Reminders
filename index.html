@@ -407,15 +407,125 @@ body::before {
 }
 .btn-ghost:hover { background: var(--s3); color: var(--text); }
 
-.sel {
-  background: var(--s2); border: 1px solid var(--border);
-  color: var(--text2); border-radius: var(--rs);
-  padding: 8px 12px; font-size: 13px;
-  font-family: 'DM Sans', sans-serif; cursor: pointer; outline: none;
-  transition: border-color .2s;
+.custom-select {
+  position: relative;
+  min-width: 150px;
+  user-select: none;
 }
-.sel:focus { border-color: var(--accent); }
-.sel option { background: var(--s2); }
+
+.custom-select-trigger {
+  height: 40px;
+  width: 100%;
+  background: var(--s2);
+  border: 1px solid rgba(79,142,247,.25);
+  color: var(--text2);
+  border-radius: 14px;
+  padding: 0 42px 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s, background .2s, color .2s;
+}
+
+.custom-select-trigger:hover,
+.custom-select.open .custom-select-trigger {
+  color: var(--text);
+  background: var(--s3);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(79,142,247,0.10);
+}
+
+.custom-select-arrow {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text2);
+  font-size: 12px;
+  pointer-events: none;
+  transition: transform .2s, color .2s;
+}
+
+.custom-select.open .custom-select-arrow {
+  transform: translateY(-50%) rotate(180deg);
+  color: var(--accent);
+}
+
+.custom-options {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: rgba(26,34,54,0.98);
+  border: 1px solid rgba(79,142,247,.25);
+  border-radius: 16px;
+  padding: 7px;
+  z-index: 999;
+  box-shadow: 0 18px 45px rgba(0,0,0,0.45);
+  display: none;
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.custom-select.open .custom-options {
+  display: block;
+  animation: dropdownIn .16s ease;
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.custom-option {
+  padding: 11px 12px;
+  border-radius: 11px;
+  color: var(--text2);
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background .18s, color .18s, transform .18s;
+}
+
+.custom-option:hover {
+  background: rgba(79,142,247,0.14);
+  color: var(--text);
+  transform: translateX(2px);
+}
+
+.custom-option.selected {
+  background: linear-gradient(135deg, rgba(79,142,247,0.85), rgba(106,159,247,0.85));
+  color: white;
+  font-weight: 700;
+}
+
+.sel {
+  display: none;
+}
+
+
+.filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.filter-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 5px;
+}
+.filter-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
 /* ════════════════════════════════════════
    EVENT LIST
@@ -495,6 +605,141 @@ body::before {
 .fi::placeholder { color:var(--text3); }
 .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .modal-ft { display:flex; gap:9px; justify-content:flex-end; margin-top:22px; }
+
+
+/* ════════════════════════════════════════
+   VIEW OCCASION DETAILS MODAL
+════════════════════════════════════════ */
+.view-modal {
+  max-width: 620px;
+  padding: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(79,142,247,0.18), transparent 32%),
+    radial-gradient(circle at 95% 10%, rgba(167,139,250,0.16), transparent 30%),
+    var(--s1);
+}
+.view-modal .modal-hd {
+  padding: 24px 26px 18px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--border);
+}
+.view-modal .modal-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 21px;
+}
+.view-sub {
+  color: var(--text2);
+  font-size: 13px;
+  margin-top: 4px;
+}
+.view-hero {
+  margin: 22px 26px;
+  padding: 22px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(79,142,247,0.14), rgba(167,139,250,0.10));
+  border: 1px solid rgba(79,142,247,0.20);
+  position: relative;
+  overflow: hidden;
+}
+.view-hero::after {
+  content: '';
+  position: absolute;
+  right: -36px;
+  top: -36px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(167,139,250,0.16);
+  filter: blur(8px);
+}
+.view-label {
+  position: relative;
+  z-index: 1;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 8px;
+}
+.view-name {
+  position: relative;
+  z-index: 1;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.15;
+}
+.view-note {
+  position: relative;
+  z-index: 1;
+  color: var(--text2);
+  font-size: 13px;
+  margin-top: 10px;
+  line-height: 1.6;
+}
+.view-grid {
+  padding: 0 26px 22px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.view-box {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid var(--border);
+}
+.view-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  background: rgba(79,142,247,0.13);
+  border: 1px solid rgba(79,142,247,0.20);
+  font-size: 16px;
+}
+.view-box p {
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 3px;
+}
+.view-box h4 {
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  line-height: 1.25;
+}
+.view-actions {
+  padding: 18px 26px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: rgba(255,255,255,0.02);
+}
+.ev-row { cursor: pointer; }
+
+@media (max-width: 600px) {
+  .view-grid { grid-template-columns: 1fr; }
+  .view-name { font-size: 24px; }
+  .view-actions { flex-direction: column-reverse; }
+  .view-actions .btn { justify-content: center; }
+}
 
 /* ════════════════════════════════════════
    TOAST
@@ -600,7 +845,7 @@ body::before {
         <i class="fa-solid fa-bars"></i>
       </div>
       <div>
-        <div class="topbar-title" id="topbarTitle">Z System Intelligent Controld Private Limited</div>
+        <div class="topbar-title" id="topbarTitle">Z System Intelligent Control Private Limited</div>
         <div class="topbar-sub" id="topbarSub">Overview of all scheduled reminders</div>
       </div>
     </div>
@@ -686,14 +931,118 @@ body::before {
         <div class="section-title">All Occasions</div>
         <div class="section-sub">Manage, edit or remove scheduled occasions</div>
       </div>
-      <select class="sel" id="limitSel" onchange="renderList()">
-        <option value="20" selected>Show 20</option>
-        <option value="50">Show 50</option>
-        <option value="9999">Show All</option>
-      </select>
-      <button class="btn btn-primary" onclick="openModal()">
-        <i class="fa-solid fa-plus"></i> Add Occasion
-      </button>
+      <div class="filter-wrap">
+        <div class="filter-box">
+          <div class="filter-label">Status</div>
+          <div class="custom-select" data-select="statusSel">
+            <button type="button" class="custom-select-trigger">Upcoming</button>
+            <span class="custom-select-arrow"><i class="fa-solid fa-chevron-down"></i></span>
+            <div class="custom-options">
+              <div class="custom-option selected" data-value="upcoming">Upcoming</div>
+              <div class="custom-option" data-value="completed">Completed</div>
+              <div class="custom-option" data-value="all">All</div>
+            </div>
+          </div>
+          <select class="sel" id="statusSel" onchange="renderList()">
+            <option value="upcoming" selected>Upcoming</option>
+            <option value="completed">Completed</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+
+        <div class="filter-box">
+          <div class="filter-label">Month</div>
+          <div class="custom-select" data-select="monthSel">
+            <button type="button" class="custom-select-trigger">All Months</button>
+            <span class="custom-select-arrow"><i class="fa-solid fa-chevron-down"></i></span>
+            <div class="custom-options">
+              <div class="custom-option selected" data-value="all">All Months</div>
+              <div class="custom-option" data-value="1">January</div>
+              <div class="custom-option" data-value="2">February</div>
+              <div class="custom-option" data-value="3">March</div>
+              <div class="custom-option" data-value="4">April</div>
+              <div class="custom-option" data-value="5">May</div>
+              <div class="custom-option" data-value="6">June</div>
+              <div class="custom-option" data-value="7">July</div>
+              <div class="custom-option" data-value="8">August</div>
+              <div class="custom-option" data-value="9">September</div>
+              <div class="custom-option" data-value="10">October</div>
+              <div class="custom-option" data-value="11">November</div>
+              <div class="custom-option" data-value="12">December</div>
+            </div>
+          </div>
+          <select class="sel" id="monthSel" onchange="renderList()">
+            <option value="all" selected>All Months</option>
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+
+        <div class="filter-box">
+          <div class="filter-label">Category</div>
+          <div class="custom-select" data-select="categorySel">
+            <button type="button" class="custom-select-trigger">All Categories</button>
+            <span class="custom-select-arrow"><i class="fa-solid fa-chevron-down"></i></span>
+            <div class="custom-options">
+              <div class="custom-option selected" data-value="all">All Categories</div>
+              <div class="custom-option" data-value="holiday">Holiday</div>
+              <div class="custom-option" data-value="festival">Festival</div>
+              <div class="custom-option" data-value="special">Special</div>
+              <div class="custom-option" data-value="work">Work</div>
+              <div class="custom-option" data-value="personal">Personal</div>
+              <div class="custom-option" data-value="deadline">Deadline</div>
+              <div class="custom-option" data-value="birthday">Birthday</div>
+            </div>
+          </div>
+          <select class="sel" id="categorySel" onchange="renderList()">
+            <option value="all" selected>All Categories</option>
+            <option value="holiday">Holiday</option>
+            <option value="festival">Festival</option>
+            <option value="special">Special</option>
+            <option value="work">Work</option>
+            <option value="personal">Personal</option>
+            <option value="deadline">Deadline</option>
+            <option value="birthday">Birthday</option>
+          </select>
+        </div>
+
+        <div class="filter-box">
+          <div class="filter-label">Limit</div>
+          <div class="custom-select" data-select="limitSel">
+            <button type="button" class="custom-select-trigger">Show 5</button>
+            <span class="custom-select-arrow"><i class="fa-solid fa-chevron-down"></i></span>
+            <div class="custom-options">
+              <div class="custom-option selected" data-value="5">Show 5</div>
+              <div class="custom-option" data-value="10">Show 10</div>
+              <div class="custom-option" data-value="20">Show 20</div>
+              <div class="custom-option" data-value="9999">Show All</div>
+            </div>
+          </div>
+          <select class="sel" id="limitSel" onchange="renderList()">
+            <option value="5" selected>Show 5</option>
+            <option value="10">Show 10</option>
+            <option value="20">Show 20</option>
+            <option value="9999">Show All</option>
+          </select>
+        </div>
+
+        <div class="filter-box">
+          <div class="filter-label">&nbsp;</div>
+          <button class="btn btn-primary" onclick="openModal()">
+            <i class="fa-solid fa-plus"></i> Add Occasion
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="ev-list" id="evList"></div>
@@ -748,6 +1097,63 @@ body::before {
 </div>
 
 <div class="toast-wrap" id="toastWrap"></div>
+<!-- ══════════════ VIEW OCCASION MODAL ══════════════ -->
+<div class="overlay" id="viewOverlay" onclick="closeViewOutside(event)">
+  <div class="modal view-modal">
+    <div class="modal-hd">
+      <div>
+        <div class="modal-title">👁️ Occasion Details</div>
+        <div class="view-sub">Complete information about the selected occasion</div>
+      </div>
+      <div class="modal-x" onclick="closeViewModal()"><i class="fa-solid fa-xmark"></i></div>
+    </div>
+
+    <div class="view-hero">
+      <div class="view-label">Occasion Name</div>
+      <div class="view-name" id="viewName">—</div>
+      <div class="view-note" id="viewNotes">No notes added</div>
+    </div>
+
+    <div class="view-grid">
+      <div class="view-box">
+        <span class="view-icon"><i class="fa-regular fa-calendar"></i></span>
+        <div>
+          <p>Date</p>
+          <h4 id="viewDate">—</h4>
+        </div>
+      </div>
+
+      <div class="view-box">
+        <span class="view-icon"><i class="fa-regular fa-clock"></i></span>
+        <div>
+          <p>Day</p>
+          <h4 id="viewDay">—</h4>
+        </div>
+      </div>
+
+      <div class="view-box">
+        <span class="view-icon"><i class="fa-solid fa-tags"></i></span>
+        <div>
+          <p>Category</p>
+          <h4 id="viewCategory">—</h4>
+        </div>
+      </div>
+
+      <div class="view-box">
+        <span class="view-icon"><i class="fa-solid fa-signal"></i></span>
+        <div>
+          <p>Status</p>
+          <h4 id="viewStatus">—</h4>
+        </div>
+      </div>
+    </div>
+
+    <div class="view-actions">
+      <button class="btn btn-primary" id="viewEditBtn"><i class="fa-solid fa-pen"></i> Edit Occasion</button>
+      <button class="btn btn-ghost" onclick="closeViewModal()">Close</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ════════════════════════════════
@@ -789,7 +1195,7 @@ async function loadEvents() {
       cat: mapCategory(ev.category),
       notes: ev.notes,
       status: mapStatus(ev.status)
-    }));
+    })).sort((a, b) => new Date(a.date) - new Date(b.date));
 
     nxtId = events.length + 1;
 
@@ -856,7 +1262,7 @@ function closeMobile() {
 ════════════════════════════════ */
 const tabMeta = {
   dashboard:{ title:'Z System Intelligent Control Private Limited', sub:'Overview of all scheduled reminders' },
-  Occasions:   { title:'Z System Intelligent Control Private Limited', sub:'Manage and schedule your occasions' },
+  events:   { title:'Z System Intelligent Control Private Limited', sub:'Manage and schedule your occasions' },
 };
 function switchTab(name, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -915,22 +1321,47 @@ function anim(id, target) {
 /* ════════════════════════════════
    EVENT LIST
 ════════════════════════════════ */
+function getFilteredEvents() {
+  const statusFilter = document.getElementById('statusSel')?.value || 'upcoming';
+  const monthFilter  = document.getElementById('monthSel')?.value || 'all';
+  const catFilter    = document.getElementById('categorySel')?.value || 'all';
+
+  return events.filter(ev => {
+    const d = diffDays(ev.date);
+    const statusOk =
+      statusFilter === 'all' ||
+      (statusFilter === 'upcoming' && d >= 0) ||
+      (statusFilter === 'completed' && d < 0);
+
+    const eventMonth = new Date(ev.date).getMonth() + 1;
+    const monthOk = monthFilter === 'all' || Number(monthFilter) === eventMonth;
+
+    const catOk = catFilter === 'all' || ev.cat === catFilter;
+
+    return statusOk && monthOk && catOk;
+  }).sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+
 function renderList() {
-  const limit = parseInt(document.getElementById('limitSel').value);
+  const limit = parseInt(document.getElementById('limitSel')?.value || '5');
   const el    = document.getElementById('evList');
-  const slice = events.slice(0, limit);
+  const filteredEvents = getFilteredEvents();
+  const slice = filteredEvents.slice(0, limit);
+
   if (!slice.length) {
-    el.innerHTML = '<div class="empty-state"><i class="fa-regular fa-calendar-xmark"></i><p>No events yet. Add your first occasion!</p></div>';
+    el.innerHTML = '<div class="empty-state"><i class="fa-regular fa-calendar-xmark"></i><p>No occasions found for the selected filters.</p></div>';
     return;
   }
+
   el.innerHTML = slice.map(ev => {
     const d     = diffDays(ev.date);
     const st    = getStatus(ev.date);
-    const dlbl  = d<0 ? `${Math.abs(d)}d ago` : d===0 ? 'Today' : `In ${d}d`;
     const slbl  = {upcoming:'Upcoming',today:'Today',completed:'Completed'}[st];
-    const dcol  = d<0 ? 'var(--text3)' : d===0 ? 'var(--green)' : 'var(--text2)';
+    const dlbl  = d < 0 ? 'Completed' : d === 0 ? 'Today' : `In ${d}d`;
+    const dcol  = d < 0 ? 'var(--green)' : d === 0 ? 'var(--green)' : 'var(--text2)';
+
     return `
-    <div class="ev-row" id="row-${ev.id}">
+    <div class="ev-row" id="row-${ev.id}" onclick="openViewModal(${ev.id})" title="Click to view occasion details">
       <div class="ev-bar-l bar-${ev.cat}"></div>
       <div class="ev-name">${ev.name}</div>
       <div class="ev-date"><i class="fa-regular fa-calendar"></i>${fmtDate(ev.date)}</div>
@@ -938,11 +1369,45 @@ function renderList() {
       <div class="ev-stat"><span class="badge status-${st}">${slbl}</span></div>
       <div class="ev-days" style="color:${dcol}">${dlbl}</div>
       <div class="ev-acts">
-        <div class="act-btn edit" title="Edit" onclick="editEvent(${ev.id})"><i class="fa-solid fa-pen"></i></div>
-        <div class="act-btn del"  title="Delete" onclick="deleteEvent(${ev.id})"><i class="fa-solid fa-trash"></i></div>
+        <div class="act-btn edit" title="Edit" onclick="event.stopPropagation(); editEvent(${ev.id})"><i class="fa-solid fa-pen"></i></div>
+        <div class="act-btn del"  title="Delete" onclick="event.stopPropagation(); deleteEvent(${ev.id})"><i class="fa-solid fa-trash"></i></div>
       </div>
     </div>`;
   }).join('');
+}
+
+function openViewModal(id) {
+  const ev = events.find(e => String(e.id) === String(id));
+
+  if (!ev) {
+    toast('⚠️', 'Occasion details not found.', 'var(--orange)');
+    return;
+  }
+
+  const statusKey = getStatus(ev.date);
+  const statusText = { upcoming: 'Upcoming', today: 'Today', completed: 'Completed' }[statusKey];
+
+  document.getElementById('viewName').textContent = ev.name || '—';
+  document.getElementById('viewDate').textContent = fmtDate(ev.date);
+  document.getElementById('viewDay').textContent = ev.day || new Date(ev.date).toLocaleDateString('en-US', { weekday: 'long' });
+  document.getElementById('viewCategory').textContent = catLabel(ev.cat);
+  document.getElementById('viewStatus').textContent = statusText;
+  document.getElementById('viewNotes').textContent = ev.notes || 'No notes added';
+
+  document.getElementById('viewEditBtn').onclick = function() {
+    closeViewModal();
+    editEvent(ev.id);
+  };
+
+  document.getElementById('viewOverlay').classList.add('open');
+}
+
+function closeViewModal() {
+  document.getElementById('viewOverlay').classList.remove('open');
+}
+
+function closeViewOutside(e) {
+  if (e.target === document.getElementById('viewOverlay')) closeViewModal();
 }
 
 /* ════════════════════════════════
@@ -995,7 +1460,8 @@ async function saveEvent() {
 
     toast('✅', editId ? 'Occasion updated!' : 'Occasion added!', 'var(--green)');
     closeModal();
-    loadEvents();
+    initCustomDropdowns();
+loadEvents();
 
   } catch (err) {
     console.error(err);
@@ -1021,7 +1487,8 @@ async function deleteEvent(id) {
     });
 
     toast('🗑️','Event removed.','var(--red)');
-    loadEvents();
+    initCustomDropdowns();
+loadEvents();
 
   } catch (err) {
     console.error(err);
@@ -1040,6 +1507,64 @@ function toast(icon, msg, color='var(--accent)') {
   setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(),320); },3000);
 }
 
+
+/* ════════════════════════════════
+   CUSTOM DROPDOWNS
+════════════════════════════════ */
+function initCustomDropdowns() {
+  document.querySelectorAll('.custom-select').forEach(dropdown => {
+    const trigger = dropdown.querySelector('.custom-select-trigger');
+    const options = dropdown.querySelectorAll('.custom-option');
+    const selectId = dropdown.dataset.select;
+    const hiddenSelect = document.getElementById(selectId);
+
+    trigger.addEventListener('click', function(e) {
+      e.stopPropagation();
+
+      document.querySelectorAll('.custom-select.open').forEach(openDropdown => {
+        if (openDropdown !== dropdown) openDropdown.classList.remove('open');
+      });
+
+      dropdown.classList.toggle('open');
+    });
+
+    options.forEach(option => {
+      option.addEventListener('click', function(e) {
+        e.stopPropagation();
+
+        const value = this.dataset.value;
+        const text = this.textContent.trim();
+
+        trigger.textContent = text;
+
+        options.forEach(opt => opt.classList.remove('selected'));
+        this.classList.add('selected');
+
+        if (hiddenSelect) {
+          hiddenSelect.value = value;
+          hiddenSelect.dispatchEvent(new Event('change'));
+        }
+
+        dropdown.classList.remove('open');
+      });
+    });
+  });
+
+  document.addEventListener('click', function() {
+    document.querySelectorAll('.custom-select.open').forEach(dropdown => {
+      dropdown.classList.remove('open');
+    });
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.custom-select.open').forEach(dropdown => {
+        dropdown.classList.remove('open');
+      });
+    }
+  });
+}
+
 /* ════════════════════════════════
    INIT
 ════════════════════════════════ */
@@ -1048,6 +1573,7 @@ function refresh() { renderStats(); renderNextEvent(); renderList(); }
 document.getElementById('todayStr').textContent =
   new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
 
+initCustomDropdowns();
 loadEvents();
 </script>
 </body>
