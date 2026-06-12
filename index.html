@@ -251,14 +251,20 @@ body::before {
   overflow: hidden;  text-overflow: ellipsis;
   max-width: 440px;
 }
+.topbar-sub {
+  white-space: nowrap;
+  overflow: hidden;  text-overflow: ellipsis;
+  max-width: 440px;
+}
 @media (max-width: 768px) {
   .topbar-title {
   font-size: 16px;
-  max-width: 180px;
+  max-width: 160px;
 }
 
 .topbar-sub {
   font-size: 10px;
+  max-width: 160px;
 }
 }
 .topbar-sub { font-size: 11.5px; color: var(--text2); margin-top: 1px; white-space: nowrap; }
@@ -428,6 +434,7 @@ body::before {
   padding: 9px 16px; border-radius: var(--rs);
   font-size: 13px; font-weight: 600; cursor: pointer; border: none;
   transition: all .2s; font-family: 'DM Sans', sans-serif; white-space: nowrap;
+  justify-content: center;
 }
 .btn-primary {
   background: linear-gradient(135deg, var(--accent), #6b9ff7);
@@ -1142,7 +1149,7 @@ body.admin-mode #adminLoginBtn { display: none !important; }
   .todo-card-grid{grid-template-columns:1fr}
 }
 @media(max-width:420px){
-  .todo-filter-row{grid-template-columns:1fr}
+  .todo-filter-row{grid-template-columns:1fr 1fr;}
 }
 
 
@@ -1377,7 +1384,7 @@ body:not(.admin-mode) .todo-admin-only{display:none!important}
 .todo-view-action.edit{color:var(--accent)}
 .todo-view-action.del{color:var(--red)}
 body:not(.admin-mode) .todo-admin-only{display:none!important}
-@media(max-width:700px){.priority-card-row.grid-two{grid-template-columns:1fr}.priority-card-created{grid-template-columns:1fr}.todo-view-grid.v3{grid-template-columns:1fr}}
+@media(max-width:700px){.priority-card-row.grid-two{grid-template-columns:1fr 1fr;}.badge {font-size: 9px;}.priority-card-created{grid-template-columns:1fr 1fr;}.todo-view-grid.v3{grid-template-columns:1fr 1fr;}.todo-view-box p {font-size: 8px;}.todo-view-box h4 {font-size: 14px;}}
 
 
 /* TODO FILTER DROPDOWN FIX */
@@ -1496,7 +1503,7 @@ body:not(.admin-mode) .todo-admin-only{display:none!important}
 .ops-action-link{position:relative;z-index:1;margin-top:16px;display:inline-flex;align-items:center;gap:8px;color:var(--accent);font-size:13px;font-weight:800;cursor:pointer}
 .ops-action-link:hover{color:var(--text)}
 @media(max-width:1000px){.ops-dashboard-grid{grid-template-columns:1fr}}
-@media(max-width:520px){.ops-mini-stats{grid-template-columns:1fr}.ops-main-name{font-size:22px}}
+@media(max-width:520px){.ops-mini-stats{grid-template-columns:1fr 1fr}.ops-main-name{font-size:22px}}
 
 
 /* ADD TODO MODAL CUSTOM DROPDOWN FIX */
@@ -2000,6 +2007,10 @@ body:not(.admin-mode) .todo-admin-only{display:none!important}
     min-width:calc(50% - 8px);
     flex:1;
   }
+  .filter-box{
+    min-width:calc(50% - 8px);
+    flex:1;
+  }
 }
 @media(max-width:720px){
   .main{margin-left:0!important;}
@@ -2020,12 +2031,8 @@ body:not(.admin-mode) .todo-admin-only{display:none!important}
     font-size:26px!important;
   }
   .ops-dashboard-grid,
-  .todo-filter-row,
   .grid-4{
-    grid-template-columns:1fr!important;
-  }
-  .todo-filter-wrap .filter-box{
-    min-width:100%;
+    grid-template-columns:1fr !important;
   }
   .todo-board-header,
   .ev-bar{
@@ -2399,7 +2406,7 @@ body:not(.admin-mode) .todo-admin-only{display:none!important}
     </div>
 
 
-    <div class="todo-board-toolbar">
+    <div class="todo-board-toolbar todo-filter">
       <div class="todo-filter-wrap">
         <div class="filter-box">
           <div class="filter-label">Status</div>
