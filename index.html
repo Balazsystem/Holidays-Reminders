@@ -44,6 +44,45 @@
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbz9TaNR2iMbVLrvO_nH1NoNJwA0FXA2imSEjIIacrQygVehOoxTfKepdmlhLZRuoCoioQ/exec";
 </script>
+
+<script>
+  /* SUPABASE TODO DATABASE CONFIG
+     Occasions = Google Sheet API
+     TODO = Supabase Database
+     Paste your Supabase Publishable key below.
+  */
+  const SUPABASE_URL = "https://jnhlgyobtatlzxmfziuu.supabase.co";
+  // Paste the public anon / publishable key here OR save it from Settings → Admin Settings → Supabase TODO Key.
+  const SUPABASE_KEY = "";
+
+  let supabaseClient = null;
+  let supabaseClientKeyCache = "";
+
+  function getSupabasePublishableKey() {
+    return (localStorage.getItem("opsSupabasePublishableKeyV1") || SUPABASE_KEY || "").trim();
+  }
+
+  function initSupabaseClient() {
+    if (typeof supabase === "undefined") {
+      console.error("Supabase SDK not loaded.");
+      return null;
+    }
+
+    const activeKey = getSupabasePublishableKey();
+    if (!activeKey || activeKey.includes("PASTE_YOUR")) {
+      console.warn("Supabase publishable / anon key not configured.");
+      return null;
+    }
+
+    if (!supabaseClient || supabaseClientKeyCache !== activeKey) {
+      supabaseClient = supabase.createClient(SUPABASE_URL, activeKey);
+      supabaseClientKeyCache = activeKey;
+    }
+
+    return supabaseClient;
+  }
+</script>
+
 <style>
 /* ════════════════════════════════════════
    VARIABLES
@@ -2224,7 +2263,7 @@ body:not(.admin-mode) .todo-admin-only{display:none!important}
   gap:16px;
 }
 .admin-grid-clean{
-  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-columns:repeat(3,minmax(0,1fr));
 }
 .settings-card-clean{
   background:linear-gradient(135deg,rgba(17,24,39,.98),rgba(26,34,54,.72));
@@ -2850,8 +2889,38 @@ html.theme-day .settings-card-clean p{
   }
 }
 
+
+/* TODO SUPABASE FETCH FIX INFO */
+.todo-db-note{
+  margin-top:12px;
+  color:var(--text2);
+  font-size:12px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.todo-db-note i{ color:var(--green); }
+
+
+/* SUPABASE TODO DB FIX */
+.todo-db-note{
+  margin-top:12px;
+  color:var(--text2);
+  font-size:12px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.todo-db-note i{color:var(--green);}
+.todo-empty-board .todo-debug-msg{
+  margin-top:10px;
+  font-size:12px;
+  color:var(--orange);
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -3147,7 +3216,7 @@ html.theme-day .settings-card-clean p{
     <div class="todo-board-header">
       <div>
         <div class="section-title">TODO Manager</div>
-        <div class="section-sub">Add tasks, set reminders, prioritize and rearrange tasks using drag & drop.</div>
+        <div class="section-sub">Add tasks, set reminders, prioritize and rearrange tasks using drag & drop.</div><div class="todo-db-note" id="todoDbNoteSupabase"><i class="fa-solid fa-database"></i> TODO data loads from Supabase. Default view shows Pending tasks with all priorities.</div>
       </div>
       <button class="btn btn-primary" onclick="openTodoModal()">
         <i class="fa-solid fa-plus"></i> Add TODO
@@ -3203,18 +3272,18 @@ html.theme-day .settings-card-clean p{
         <div class="filter-box">
           <div class="filter-label">Priority</div>
           <div class="custom-select" data-select="todoPrioritySel">
-            <button type="button" class="custom-select-trigger">High</button>
+            <button type="button" class="custom-select-trigger">All Priority</button>
             <span class="custom-select-arrow"><i class="fa-solid fa-chevron-down"></i></span>
             <div class="custom-options">
-              <div class="custom-option" data-value="all">All Priority</div>
-              <div class="custom-option selected" data-value="High">High</div>
+              <div class="custom-option selected" data-value="all">All Priority</div>
+              <div class="custom-option" data-value="High">High</div>
               <div class="custom-option" data-value="Medium">Medium</div>
               <div class="custom-option" data-value="Low">Low</div>
             </div>
           </div>
           <select class="sel" id="todoPrioritySel" onchange="renderTodos()">
-            <option value="all">All Priority</option>
-            <option value="High" selected>High</option>
+            <option value="all" selected>All Priority</option>
+            <option value="High">High</option>
             <option value="Medium">Medium</option>
             <option value="Low">Low</option>
           </select>
@@ -3290,7 +3359,7 @@ html.theme-day .settings-card-clean p{
       <div class="settings-hero-clean">
         <div>
           <div class="section-title">Settings</div>
-          <div class="section-sub">Manage viewer preferences, sheet connection and admin controls.</div>
+          <div class="section-sub">Manage viewer preferences, Sheet connection, Supabase connection and admin controls.</div>
         </div>
         <div class="settings-mode-pill-clean" id="settingsModePill">
           <i class="fa-solid fa-user-shield"></i>
@@ -3310,7 +3379,7 @@ html.theme-day .settings-card-clean p{
           <div class="settings-card-clean">
             <div class="settings-card-icon-clean"><i class="fa-solid fa-link"></i></div>
             <h4>Sheet Connection</h4>
-            <p>Check whether Google Sheet API is connected.</p>
+            <p>Check whether Google Sheet is connected.</p>
             <div class="settings-status-clean">
               <span class="live-dot-v7"></span>
               <span id="settingApiStatus">Checking...</span>
@@ -3319,6 +3388,20 @@ html.theme-day .settings-card-clean p{
               <i class="fa-solid fa-rotate"></i> Test Connection
             </button>
           </div>
+
+          <div class="settings-card-clean">
+            <div class="settings-card-icon-clean"><i class="fa-solid fa-database"></i></div>
+            <h4>Supabase Connection</h4>
+            <p>Check whether TODO database is connected.</p>
+            <div class="settings-status-clean">
+              <span class="live-dot-v7"></span>
+              <span id="settingSupabaseStatus">Checking...</span>
+            </div>
+            <button class="btn btn-ghost settings-full-btn-clean" onclick="checkSupabaseStatusV7()">
+              <i class="fa-solid fa-rotate"></i> Test Supabase
+            </button>
+          </div>
+
 
           <div class="settings-card-clean">
             <div class="settings-card-icon-clean"><i class="fa-solid fa-circle-half-stroke"></i></div>
@@ -3364,17 +3447,6 @@ html.theme-day .settings-card-clean p{
 
         <div class="settings-grid-clean admin-grid-clean">
           <div class="settings-card-clean">
-            <div class="settings-card-icon-clean"><i class="fa-solid fa-building"></i></div>
-            <h4>Company Display</h4>
-            <p>Update the top title locally on this browser.</p>
-            <label class="fl">Company / App Name</label>
-            <input class="fi" id="settingCompanyName" placeholder="Z System Operations Center" />
-            <button class="btn btn-primary settings-full-btn-clean" onclick="saveCompanySettingV7()">
-              <i class="fa-solid fa-floppy-disk"></i> Save Name
-            </button>
-          </div>
-
-          <div class="settings-card-clean">
             <div class="settings-card-icon-clean"><i class="fa-solid fa-key"></i></div>
             <h4>Admin Password</h4>
             <p>Change frontend admin password for this browser.</p>
@@ -3382,6 +3454,17 @@ html.theme-day .settings-card-clean p{
             <input class="fi" id="settingAdminPassword" type="password" placeholder="Enter new password" />
             <button class="btn btn-primary settings-full-btn-clean" onclick="saveAdminPasswordV7()">
               <i class="fa-solid fa-key"></i> Save Password
+            </button>
+          </div>
+
+          <div class="settings-card-clean wide-clean">
+            <div class="settings-card-icon-clean"><i class="fa-solid fa-database"></i></div>
+            <h4>Supabase TODO Key</h4>
+            <p>Paste the Supabase public anon / publishable key here. This is required for TODO cards to fetch from the Supabase todos table.</p>
+            <label class="fl">Publishable / anon public key</label>
+            <input class="fi" id="settingSupabaseKey" type="password" placeholder="Paste Supabase anon public key" autocomplete="off" />
+            <button class="btn btn-primary settings-full-btn-clean" onclick="saveSupabaseKeyV7()">
+              <i class="fa-solid fa-floppy-disk"></i> Save Supabase Key
             </button>
           </div>
 
@@ -4705,62 +4788,95 @@ document.addEventListener("click", function(){
 });
 
 
-/* TODO MANAGER - FINAL GOOGLE SHEET CONNECTED */
+
+/* TODO MANAGER - SUPABASE DATABASE CONNECTED */
 let todos = [];
 let todoSortable = null;
 let activeTodoViewId = null;
 
 function normalizeTodo(raw) {
-  const deadline = raw.deadlineDate || raw.date || raw["Deadline Date"] || "";
+  const deadline = raw.deadline_date || raw.deadlineDate || raw.due_date || raw.dueDate || raw.deadline || raw.date || raw.reminder_date || "";
+  const created = raw.created_at || raw.createdAt || raw.created_date || "";
+  const rawStatus = raw.status || raw.todo_status || "Pending";
+  const status = String(rawStatus).toLowerCase() === "completed" || String(rawStatus).toLowerCase() === "done" ? "Completed" : "Pending";
+
   return {
-    id: raw.id || raw.ID || "",
-    title: raw.title || raw.Title || "",
-    desc: raw.description || raw.desc || raw.Description || "",
-    date: formatDateOnly(deadline),
-    time: raw.reminderTime || raw.time || raw["Reminder Time"] || "09:00",
-    reminderType: raw.reminderType || raw["Reminder Type"] || "Mail",
-    priority: raw.priority || raw.Priority || "Medium",
-    status: raw.status || raw.Status || "Pending",
-    position: Number(raw.position || raw.Position || 9999),
-    createdAt: raw.createdAt || raw["Created At"] || ""
+    id: raw.id ?? raw.todo_id ?? raw.uuid ?? "",
+    title: raw.title || raw.task || raw.task_name || raw.name || raw.todo || "Untitled TODO",
+    desc: raw.description || raw.desc || raw.notes || raw.note || "",
+    date: deadline ? formatDateOnly(deadline) : "",
+    time: raw.reminder_time ? String(raw.reminder_time).slice(0, 5) : (raw.time ? String(raw.time).slice(0, 5) : "09:00"),
+    reminderType: raw.reminder_type || raw.reminderType || raw.type || "Mail",
+    priority: raw.priority || "Medium",
+    status,
+    position: Number(raw.position || raw.sort_order || raw.order_no || 9999),
+    createdAt: created,
+    updatedAt: raw.updated_at || raw.updatedAt || ""
   };
 }
 
-async function apiGetTodos() {
-  const res = await fetch(`${API_URL}?action=getTodos&ts=${Date.now()}`);
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
-}
-
-async function apiPostTodo(payload) {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-  return await res.json().catch(() => ({ status: "success" }));
-}
-
 async function loadTodos() {
-  try {
-    const data = await apiGetTodos();
+  const client = initSupabaseClient();
+  const note = document.getElementById("todoDbNoteSupabase");
 
-    todos = data
-      .map(normalizeTodo)
-      .sort((a, b) => Number(a.position || 9999) - Number(b.position || 9999));
+  if (!client) {
+    todos = [];
+    renderTodos("Supabase key missing. Open Settings → Admin Settings → Supabase TODO Key and paste the anon public / publishable key.");
+    updateTodoStats();
+    if (note) note.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Supabase key missing. Save the key in Settings.';
+    if (typeof renderDashboardTodos === "function") renderDashboardTodos();
+    return;
+  }
+
+  try {
+    if (note) note.innerHTML = '<i class="fa-solid fa-database"></i> Loading TODO data from Supabase...';
+
+    let data = null;
+    let error = null;
+
+    // First try with sorting. If a column like position/created_at is missing, fallback to plain select.
+    const sortedRes = await client
+      .from("todos")
+      .select("*")
+      .order("position", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false });
+
+    data = sortedRes.data;
+    error = sortedRes.error;
+
+    if (error) {
+      console.warn("Sorted TODO fetch failed. Retrying plain select:", error.message);
+      const plainRes = await client.from("todos").select("*");
+      data = plainRes.data;
+      error = plainRes.error;
+    }
+
+    if (error) throw error;
+
+    todos = (data || []).map(normalizeTodo).sort((a, b) => {
+      const pa = Number(a.position || 9999);
+      const pb = Number(b.position || 9999);
+      if (pa !== pb) return pa - pb;
+      return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+    });
 
     renderTodos();
     initTodoSortable();
+    updateTodoStats();
 
-    if (typeof renderDashboardTodos === "function") {
-      renderDashboardTodos();
-    }
-
-    hideResetDemoButton();
-    renderNotifications();
+    if (note) note.innerHTML = `<i class="fa-solid fa-database"></i> TODO data loaded from Supabase (${todos.length} cards).`;
+    if (typeof renderDashboardTodos === "function") renderDashboardTodos();
+    if (typeof renderNotifications === "function") renderNotifications();
+    if (typeof hideResetDemoButton === "function") hideResetDemoButton();
 
   } catch (err) {
-    console.error("TODO Load Error:", err);
-    toast("❌", "TODO Sheet connection failed.", "var(--red)");
+    console.error("Supabase TODO Load Error:", err);
+    todos = [];
+    const msg = err?.message || "Supabase TODO fetch failed.";
+    renderTodos(msg + " Check: table name = todos, RLS SELECT policy enabled, and key saved correctly.");
+    updateTodoStats();
+    if (note) note.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Supabase TODO fetch failed: ${escapeHtml(msg)}`;
+    if (typeof toast === "function") toast("❌", "Supabase TODO fetch failed.", "var(--red)");
   }
 }
 
@@ -4768,17 +4884,11 @@ function openTodoModal() {
   document.getElementById("todoTitle").value = "";
   document.getElementById("todoDesc").value = "";
 
-  if (typeof setTodoDateValue === "function") {
-    setTodoDateValue("");
-  } else {
-    document.getElementById("todoDate").value = "";
-  }
+  if (typeof setTodoDateValue === "function") setTodoDateValue("");
+  else document.getElementById("todoDate").value = "";
 
-  if (typeof setTodoTimeValue === "function") {
-    setTodoTimeValue("09:00");
-  } else {
-    document.getElementById("todoTime").value = "09:00";
-  }
+  if (typeof setTodoTimeValue === "function") setTodoTimeValue("09:00");
+  else document.getElementById("todoTime").value = "09:00";
 
   if (typeof setCustomDropdownValue === "function") {
     setCustomDropdownValue("todoReminderType", "Mail", "Mail");
@@ -4802,12 +4912,19 @@ function closeTodoOutside(e) {
 }
 
 async function saveTodo() {
+  const client = initSupabaseClient();
+
+  if (!client) {
+    toast("⚠️", "Supabase key not configured.", "var(--orange)");
+    return;
+  }
+
   const title = document.getElementById("todoTitle").value.trim();
   const desc = document.getElementById("todoDesc").value.trim();
   const date = formatDateOnly(document.getElementById("todoDate").value);
-  const time = document.getElementById("todoTime").value;
-  const reminderType = document.getElementById("todoReminderType").value;
-  const priority = document.getElementById("todoPriority").value;
+  const time = document.getElementById("todoTime").value || "09:00";
+  const reminderType = document.getElementById("todoReminderType").value || "Mail";
+  const priority = document.getElementById("todoPriority").value || "Medium";
 
   if (!title) {
     toast("⚠️", "Please enter TODO title.", "var(--orange)");
@@ -4815,26 +4932,31 @@ async function saveTodo() {
   }
 
   try {
-    await apiPostTodo({
-      action: "addTodo",
+    const nextPosition = todos.length ? Math.max(...todos.map(t => Number(t.position || 0))) + 1 : 1;
+
+    const { error } = await client.from("todos").insert([{
       title,
       description: desc,
-      deadlineDate: date,
-      reminderTime: time,
-      reminderType,
       priority,
-      status: "Pending"
-    });
+      status: "Pending",
+      deadline_date: date || null,
+      reminder_time: time,
+      reminder_type: reminderType,
+      position: nextPosition
+    }]);
+
+    if (error) throw error;
 
     closeTodoModal();
     await loadTodos();
-    toast("✅", "TODO saved to Google Sheet.", "var(--green)");
-    addActivity("todo","TODO created", title);
-    renderNotifications();
+
+    toast("✅", "TODO saved to Supabase.", "var(--green)");
+    if (typeof addActivity === "function") addActivity("todo", "TODO created", title);
+    if (typeof renderNotifications === "function") renderNotifications();
 
   } catch (err) {
-    console.error("TODO Save Error:", err);
-    toast("❌", "Failed to save TODO.", "var(--red)");
+    console.error("Supabase TODO Save Error:", err);
+    toast("❌", err.message || "Failed to save TODO.", "var(--red)");
   }
 }
 
@@ -4854,7 +4976,7 @@ function getFilteredTodos() {
   const statusFilter = document.getElementById("todoStatusSel")?.value || "all";
   const priorityFilter = document.getElementById("todoPrioritySel")?.value || "all";
   const typeFilter = document.getElementById("todoTypeSel")?.value || "all";
-  const limit = Number(document.getElementById("todoLimitSel")?.value || "6");
+  const limit = Number(document.getElementById("todoLimitSel")?.value || "9");
 
   let filtered = todos.filter(todo => {
     const statusOk =
@@ -4869,9 +4991,8 @@ function getFilteredTodos() {
     return statusOk && priorityOk && typeOk;
   });
 
-
   const priorityRank = { High: 1, Medium: 2, Low: 3 };
-  filtered.sort((a,b) => {
+  filtered.sort((a, b) => {
     const sa = a.status === "Completed" ? 2 : isTodoOverdue(a) ? 0 : 1;
     const sb = b.status === "Completed" ? 2 : isTodoOverdue(b) ? 0 : 1;
     if (sa !== sb) return sa - sb;
@@ -4888,15 +5009,15 @@ function getFilteredTodos() {
 
 function clearTodoFilters() {
   if (typeof setCustomDropdownValue === "function") {
-    setCustomDropdownValue("todoStatusSel", "pending", "Pending");
-    setCustomDropdownValue("todoPrioritySel", "High", "High");
+    setCustomDropdownValue("todoStatusSel", "all", "All Tasks");
+    setCustomDropdownValue("todoPrioritySel", "all", "All Priority");
     setCustomDropdownValue("todoTypeSel", "all", "All Types");
-    setCustomDropdownValue("todoLimitSel", "6", "Show 6");
+    setCustomDropdownValue("todoLimitSel", "9", "Show 9");
   } else {
-    document.getElementById("todoStatusSel").value = "pending";
-    document.getElementById("todoPrioritySel").value = "High";
+    document.getElementById("todoStatusSel").value = "all";
+    document.getElementById("todoPrioritySel").value = "all";
     document.getElementById("todoTypeSel").value = "all";
-    document.getElementById("todoLimitSel").value = "6";
+    document.getElementById("todoLimitSel").value = "9";
   }
 
   renderTodos();
@@ -4904,7 +5025,7 @@ function clearTodoFilters() {
   toast("🧹", "TODO filters cleared.", "var(--accent)");
 }
 
-function renderTodos() {
+function renderTodos(debugMessage = "") {
   const list = document.getElementById("todoList");
   if (!list) return;
 
@@ -4913,13 +5034,12 @@ function renderTodos() {
   const visibleTodos = getFilteredTodos();
 
   if (!visibleTodos.length) {
-    list.innerHTML = '<div class="todo-empty-board"><i class="fa-regular fa-square-check"></i><p>No TODO cards found from Google Sheet.</p></div>';
+    const extra = debugMessage ? `<div class="todo-debug-msg">${escapeHtml(debugMessage)}</div>` : "";
+    list.innerHTML = `<div class="todo-empty-board"><i class="fa-regular fa-square-check"></i><p>No TODO cards match the selected filters.</p>${extra}</div>`;
     return;
   }
 
   list.innerHTML = visibleTodos.map(todo => {
-    const realIndex = todos.findIndex(t => String(t.id) === String(todo.id));
-    const taskNo = realIndex + 1;
     const pClass = `todo-priority-${String(todo.priority).toLowerCase()}`;
     const doneClass = todo.status === "Completed" ? "done" : "";
     const statusText = isTodoOverdue(todo) ? "Overdue" : todo.status;
@@ -4939,7 +5059,7 @@ function renderTodos() {
         <div class="priority-card-top">
           <div class="priority-card-title-wrap">
             <div class="priority-card-title">${escapeHtml(todo.title)}</div>
-            <div class="priority-card-sub">Click to view full task details</div>
+            <div class="priority-card-sub">Supabase task • Click to view details</div>
           </div>
           <div class="priority-card-drag" onclick="event.stopPropagation()" title="Drag to reorder">
             <i class="fa-solid fa-grip-vertical"></i>
@@ -4986,6 +5106,9 @@ function initTodoSortable() {
     handle: ".priority-card-drag",
     ghostClass: "sortable-ghost",
     onEnd: async function () {
+      const client = initSupabaseClient();
+      if (!client) return;
+
       const orderedIds = Array.from(list.querySelectorAll(".priority-todo-card")).map(el => String(el.dataset.id));
       const visibleSet = new Set(orderedIds);
       const reorderedVisible = orderedIds.map(id => todos.find(t => String(t.id) === id)).filter(Boolean);
@@ -4994,17 +5117,15 @@ function initTodoSortable() {
       todos = [...reorderedVisible, ...hiddenTodos];
 
       try {
-        await apiPostTodo({
-          action: "reorderTodos",
-          order: todos.map(t => t.id)
-        });
+        for (let i = 0; i < todos.length; i++) {
+          await client.from("todos").update({ position: i + 1, updated_at: new Date().toISOString() }).eq("id", todos[i].id);
+        }
 
         await loadTodos();
-        toast("↕️", "TODO priority order saved to Sheet.", "var(--accent)");
-
+        toast("↕️", "TODO order saved to Supabase.", "var(--accent)");
       } catch (err) {
-        console.error("TODO Reorder Error:", err);
-        toast("❌", "Failed to save TODO order.", "var(--red)");
+        console.error("Supabase TODO Reorder Error:", err);
+        toast("❌", err.message || "Failed to save TODO order.", "var(--red)");
       }
     }
   });
@@ -5081,17 +5202,11 @@ function editTodo(id) {
   document.getElementById("todoTitle").value = todo.title || "";
   document.getElementById("todoDesc").value = todo.desc || "";
 
-  if (typeof setTodoDateValue === "function") {
-    setTodoDateValue(todo.date || "");
-  } else {
-    document.getElementById("todoDate").value = todo.date || "";
-  }
+  if (typeof setTodoDateValue === "function") setTodoDateValue(todo.date || "");
+  else document.getElementById("todoDate").value = todo.date || "";
 
-  if (typeof setTodoTimeValue === "function") {
-    setTodoTimeValue(todo.time || "09:00");
-  } else {
-    document.getElementById("todoTime").value = todo.time || "09:00";
-  }
+  if (typeof setTodoTimeValue === "function") setTodoTimeValue(todo.time || "09:00");
+  else document.getElementById("todoTime").value = todo.time || "09:00";
 
   if (typeof setCustomDropdownValue === "function") {
     setCustomDropdownValue("todoReminderType", todo.reminderType || "Mail", todo.reminderType || "Mail");
@@ -5113,8 +5228,12 @@ function editTodo(id) {
 }
 
 async function updateTodo(id) {
-  const todo = todos.find(t => String(t.id) === String(id));
-  if (!todo) return;
+  const client = initSupabaseClient();
+
+  if (!client) {
+    toast("⚠️", "Supabase key not configured.", "var(--orange)");
+    return;
+  }
 
   const title = document.getElementById("todoTitle").value.trim();
 
@@ -5124,28 +5243,29 @@ async function updateTodo(id) {
   }
 
   try {
-    await apiPostTodo({
-      action: "updateTodo",
-      id,
+    const { error } = await client.from("todos").update({
       title,
       description: document.getElementById("todoDesc").value.trim(),
-      deadlineDate: formatDateOnly(document.getElementById("todoDate").value),
-      reminderTime: document.getElementById("todoTime").value,
-      reminderType: document.getElementById("todoReminderType").value,
-      priority: document.getElementById("todoPriority").value,
-      status: todo.status
-    });
+      deadline_date: formatDateOnly(document.getElementById("todoDate").value) || null,
+      reminder_time: document.getElementById("todoTime").value || "09:00",
+      reminder_type: document.getElementById("todoReminderType").value || "Mail",
+      priority: document.getElementById("todoPriority").value || "Medium",
+      updated_at: new Date().toISOString()
+    }).eq("id", id);
+
+    if (error) throw error;
 
     closeTodoModal();
     resetTodoSaveButton();
     await loadTodos();
-    toast("✅", "TODO updated in Google Sheet.", "var(--green)");
-    addActivity("todo","TODO updated", title);
-    renderNotifications();
+
+    toast("✅", "TODO updated in Supabase.", "var(--green)");
+    if (typeof addActivity === "function") addActivity("todo", "TODO updated", title);
+    if (typeof renderNotifications === "function") renderNotifications();
 
   } catch (err) {
-    console.error("TODO Update Error:", err);
-    toast("❌", "Failed to update TODO.", "var(--red)");
+    console.error("Supabase TODO Update Error:", err);
+    toast("❌", err.message || "Failed to update TODO.", "var(--red)");
   }
 }
 
@@ -5161,43 +5281,61 @@ function resetTodoSaveButton() {
 }
 
 async function toggleTodoDone(id) {
+  const client = initSupabaseClient();
+
+  if (!client) {
+    toast("⚠️", "Supabase key not configured.", "var(--orange)");
+    return;
+  }
+
   const todo = todos.find(t => String(t.id) === String(id));
   if (!todo) return;
 
   const newStatus = todo.status === "Completed" ? "Pending" : "Completed";
 
   try {
-    await apiPostTodo({
-      action: "updateTodoStatus",
-      id,
-      status: newStatus
-    });
+    const { error } = await client.from("todos").update({
+      status: newStatus,
+      updated_at: new Date().toISOString()
+    }).eq("id", id);
+
+    if (error) throw error;
 
     await loadTodos();
+    if (typeof addActivity === "function") addActivity("todo", "TODO status updated", todo.title);
+    if (typeof renderNotifications === "function") renderNotifications();
 
   } catch (err) {
-    console.error("TODO Status Error:", err);
-    toast("❌", "Failed to update TODO status.", "var(--red)");
+    console.error("Supabase TODO Status Error:", err);
+    toast("❌", err.message || "Failed to update TODO status.", "var(--red)");
   }
 }
 
 async function deleteTodo(id) {
   if (typeof requireAdmin === "function" && !requireAdmin()) return;
 
+  const client = initSupabaseClient();
+
+  if (!client) {
+    toast("⚠️", "Supabase key not configured.", "var(--orange)");
+    return;
+  }
+
+  const todo = todos.find(t => String(t.id) === String(id));
+
   try {
-    await apiPostTodo({
-      action: "deleteTodo",
-      id
-    });
+    const { error } = await client.from("todos").delete().eq("id", id);
+
+    if (error) throw error;
 
     await loadTodos();
-    toast("🗑️", "TODO deleted from Google Sheet.", "var(--red)");
-    addActivity("todo","TODO deleted", String(id));
-    renderNotifications();
+    toast("🗑️", "TODO deleted from Supabase.", "var(--red)");
+    if (typeof addActivity === "function") addActivity("todo", "TODO deleted", todo ? todo.title : String(id));
+    if (typeof renderNotifications === "function") renderNotifications();
 
   } catch (err) {
-    console.error("TODO Delete Error:", err);
-    toast("❌", "Failed to delete TODO.", "var(--red)");
+    console.error("Supabase TODO Delete Error:", err);
+    toast("❌", err.message || "Failed to delete TODO.", "var(--red)");
   }
 }
 
@@ -5206,6 +5344,7 @@ function updateTodoStats() {
   const pending = todos.filter(t => t.status !== "Completed").length;
   const done = todos.filter(t => t.status === "Completed").length;
   const overdue = todos.filter(t => isTodoOverdue(t)).length;
+  const highPending = todos.filter(t => t.status !== "Completed" && String(t.priority || "").toLowerCase() === "high").length;
 
   const set = (id, value) => {
     const el = document.getElementById(id);
@@ -5216,184 +5355,38 @@ function updateTodoStats() {
   set("todoPending", pending);
   set("todoDone", done);
   set("todoOverdue", overdue);
+  set("todoHighPendingCount", highPending);
 
   const badge = document.getElementById("todoBadge");
   if (badge) badge.textContent = pending;
 
-  if (typeof renderDashboardTodos === "function") {
-    renderDashboardTodos();
-  }
+  if (typeof renderDashboardTodos === "function") renderDashboardTodos();
 }
 
 async function resetTodoDemo() {
-  toast("⚠️", "Demo reset disabled after Sheet connection.", "var(--orange)");
+  toast("⚠️", "Demo reset disabled after Supabase connection.", "var(--orange)");
+}
+
+async function testSupabaseTodos() {
+  const client = initSupabaseClient();
+
+  if (!client) {
+    console.warn("Supabase key missing.");
+    return;
+  }
+
+  const { data, error } = await client.from("todos").select("*");
+  console.log("Supabase todos:", data);
+  console.log("Supabase error:", error);
 }
 
 function escapeHtml(value) {
-  return String(value)
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-
-
-function setTodoDefaultFiltersV22(){
-  if (typeof setCustomDropdownValue === "function") {
-    setCustomDropdownValue("todoStatusSel", "pending", "Pending");
-    setCustomDropdownValue("todoPrioritySel", "High", "High");
-  } else {
-    if(document.getElementById("todoStatusSel")) document.getElementById("todoStatusSel").value = "pending";
-    if(document.getElementById("todoPrioritySel")) document.getElementById("todoPrioritySel").value = "High";
-  }
-}
-
-
-/* V3-V6 FUNCTIONS */
-function getActivityLog(){
-  try { return JSON.parse(localStorage.getItem("opsActivityLog") || "[]"); }
-  catch(e){ return []; }
-}
-function saveActivityLog(log){
-  localStorage.setItem("opsActivityLog", JSON.stringify(log.slice(0,60)));
-}
-function addActivity(type, title, detail){
-  const log = getActivityLog();
-  log.unshift({
-    type,
-    title,
-    detail: detail || "",
-    time: new Date().toISOString()
-  });
-  saveActivityLog(log);
-  renderActivityLog();
-}
-function renderActivityLog(){
-  const list = document.getElementById("activityList");
-  if(!list) return;
-  const log = getActivityLog();
-  if(!log.length){
-    list.innerHTML = '<div class="notification-empty">No recent activity yet.</div>';
-    return;
-  }
-  list.innerHTML = log.slice(0,8).map(item => {
-    const icon = item.type === "todo" ? "fa-list-check" : item.type === "event" ? "fa-calendar-days" : "fa-bell";
-    const time = new Date(item.time).toLocaleString("en-US", {month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"});
-    return `
-      <div class="activity-row">
-        <i class="fa-solid ${icon}"></i>
-        <div>
-          <div class="activity-main">${escapeHtml(item.title || "Activity")}</div>
-          <div class="activity-sub">${escapeHtml(item.detail || "")}</div>
-        </div>
-        <div class="activity-time">${time}</div>
-      </div>
-    `;
-  }).join("");
-}
-function clearActivityLog(){
-  localStorage.removeItem("opsActivityLog");
-  renderActivityLog();
-  toast("🧹","Activity log cleared.","var(--accent)");
-}
-function buildNotifications(){
-  const items = [];
-  const now = new Date();
-  now.setHours(0,0,0,0);
-
-  if(Array.isArray(events)){
-    events.forEach(ev => {
-      const d = new Date(ev.date);
-      d.setHours(0,0,0,0);
-      const diff = Math.ceil((d - now) / 86400000);
-      if(diff >= 0 && diff <= 7){
-        items.push({
-          type:"event",
-          icon:"fa-calendar-days",
-          color: diff <= 1 ? "orange" : "",
-          msg: `${ev.name}`,
-          meta: diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : `In ${diff} days`
-        });
-      }
-    });
-  }
-
-  if(Array.isArray(todos)){
-    todos.forEach(todo => {
-      if(todo.status === "Completed") return;
-      const dateValue = formatDateOnly(todo.date || todo.deadlineDate || "");
-      let color = "";
-      let meta = todo.priority || "Medium";
-      if(dateValue){
-        const d = new Date(dateValue);
-        d.setHours(0,0,0,0);
-        const diff = Math.ceil((d - now) / 86400000);
-        if(diff < 0){ color = "red"; meta = "Overdue"; }
-        else if(diff === 0){ color = "orange"; meta = "Due today"; }
-        else if(diff <= 2){ color = "orange"; meta = `Due in ${diff} days`; }
-      }
-      if((todo.priority || "").toLowerCase() === "high" || color){
-        items.push({
-          type:"todo",
-          icon:"fa-list-check",
-          color,
-          msg:`TODO: ${todo.title}`,
-          meta
-        });
-      }
-    });
-  }
-
-  return items.slice(0,20);
-}
-function renderNotifications(){
-  const list = document.getElementById("notificationList");
-  const count = document.getElementById("notificationCount");
-  if(!list || !count) return;
-  const items = buildNotifications();
-  count.textContent = items.length;
-  count.style.display = items.length ? "flex" : "none";
-
-  if(!items.length){
-    list.innerHTML = '<div class="notification-empty">No urgent notifications.</div>';
-    return;
-  }
-
-  list.innerHTML = items.map(item => `
-    <div class="notification-item">
-      <div class="notification-icon ${item.color || ""}"><i class="fa-solid ${item.icon}"></i></div>
-      <div>
-        <div class="notification-msg">${escapeHtml(item.msg)}</div>
-        <div class="notification-meta">${escapeHtml(item.meta)}</div>
-      </div>
-    </div>
-  `).join("");
-}
-function toggleNotifications(e){
-  if(e) e.stopPropagation();
-  renderNotifications();
-  document.getElementById("notificationPanel")?.classList.toggle("open");
-}
-function closeNotifications(){
-  document.getElementById("notificationPanel")?.classList.remove("open");
-}
-document.addEventListener("click", function(e){
-  const panel = document.getElementById("notificationPanel");
-  const btn = document.getElementById("notificationBtn");
-  if(panel && btn && !panel.contains(e.target) && !btn.contains(e.target)){
-    panel.classList.remove("open");
-  }
-});
-function renderTodoReminderNote(){
-  const holder = document.getElementById("todoReminderNote");
-  if(!holder) return;
-  holder.innerHTML = `
-    <div class="todo-reminder-note">
-      <b>📧 Reminder Ready:</b> TODO reminders are stored in Google Sheet. Apps Script trigger can run <b>sendTodoReminders()</b> to send emails based on deadline date and reminder time.
-    </div>
-  `;
 }
 
 /* ════════════════════════════════
@@ -5426,26 +5419,19 @@ loadTodos();
 
 /* V7 SETTINGS TAB - APPENDED ONLY */
 function initSettingsV7(){
-  const company = localStorage.getItem("opsCompanyNameV7") || "Z System Operations Center";
   const emails = localStorage.getItem("opsEmailListV7") || "balakrbs@gmail.com,suresh.p@zsystem.in,tharani.s@zsystem.in";
-  const companyInput = document.getElementById("settingCompanyName");
   const emailInput = document.getElementById("settingEmailList");
-  if(companyInput) companyInput.value = company;
+  const supabaseInput = document.getElementById("settingSupabaseKey");
   if(emailInput) emailInput.value = emails;
-  applyCompanyNameV7(company);
+  if(supabaseInput) supabaseInput.value = getSupabasePublishableKey();
   checkApiStatusV7();
+  checkSupabaseStatusV7();
 }
 function applyCompanyNameV7(name){
-  document.querySelectorAll(".topbar-title").forEach(el => {
-    if(el.textContent.includes("Z System") || el.textContent.includes("Operations")) el.textContent = name;
-  });
+  /* Company display setting removed. Keep this no-op for backward compatibility. */
 }
 function saveCompanySettingV7(){
-  const input = document.getElementById("settingCompanyName");
-  const name = (input?.value || "Z System Operations Center").trim();
-  localStorage.setItem("opsCompanyNameV7", name);
-  applyCompanyNameV7(name);
-  if(typeof toast === "function") toast("✅","Company name saved.","var(--green)");
+  if(typeof toast === "function") toast("ℹ️","Company display setting removed.","var(--accent)");
 }
 function saveAdminPasswordV7(){
   const input = document.getElementById("settingAdminPassword");
@@ -5457,6 +5443,20 @@ function saveAdminPasswordV7(){
   localStorage.setItem("opsAdminPasswordV7", value);
   if(input) input.value = "";
   if(typeof toast === "function") toast("✅","Admin password saved locally.","var(--green)");
+}
+function saveSupabaseKeyV7(){
+  const input = document.getElementById("settingSupabaseKey");
+  const value = (input?.value || "").trim();
+  if(!value){
+    if(typeof toast === "function") toast("⚠️","Paste Supabase anon public key first.","var(--orange)");
+    return;
+  }
+  localStorage.setItem("opsSupabasePublishableKeyV1", value);
+  supabaseClient = null;
+  supabaseClientKeyCache = "";
+  if(typeof toast === "function") toast("✅","Supabase key saved. Reloading TODO cards.","var(--green)");
+  if(typeof loadTodos === "function") loadTodos();
+  if(typeof checkApiStatusV7 === "function") checkApiStatusV7();
 }
 function saveEmailListV7(){
   const input = document.getElementById("settingEmailList");
@@ -5480,6 +5480,27 @@ async function checkApiStatusV7(){
   }catch(e){
     el.textContent = "Connection Failed";
     el.style.color = "var(--red)";
+  }
+}
+async function checkSupabaseStatusV7(){
+  const el = document.getElementById("settingSupabaseStatus");
+  if(!el) return;
+  el.textContent = "Checking...";
+  try{
+    const client = initSupabaseClient();
+    if(!client){
+      el.textContent = "Key Missing";
+      el.style.color = "var(--orange)";
+      return;
+    }
+    const { error } = await client.from("todos").select("id", { count: "exact", head: true });
+    if(error) throw error;
+    el.textContent = "Live Supabase Connected";
+    el.style.color = "var(--green)";
+  }catch(e){
+    el.textContent = "Connection Failed";
+    el.style.color = "var(--red)";
+    console.error("Supabase settings status error:", e);
   }
 }
 document.addEventListener("DOMContentLoaded", function(){
@@ -5646,5 +5667,83 @@ window.setThemeModeV7 = function(mode, btn){
 })();
 
 </script>
+
+<script>
+/* TODO SUPABASE FILTER DEFAULT FIX */
+function applyTodoFilterDefaultSupabaseFix(){
+  const status = document.getElementById("todoStatusSel");
+  const priority = document.getElementById("todoPrioritySel");
+
+  if (typeof setCustomDropdownValue === "function") {
+    if (status && !status.value) setCustomDropdownValue("todoStatusSel", "pending", "Pending");
+    if (priority) setCustomDropdownValue("todoPrioritySel", "all", "All Priority");
+  } else {
+    if (status && !status.value) status.value = "pending";
+    if (priority) priority.value = "all";
+  }
+
+  if (typeof renderTodos === "function") renderTodos();
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  setTimeout(applyTodoFilterDefaultSupabaseFix, 900);
+});
+</script>
+
+
+<script>
+/* SUPABASE TODO FINAL DEFAULT + STATUS CHECK */
+function applySupabaseTodoDefaults(){
+  const priority = document.getElementById("todoPrioritySel");
+  if (priority && priority.value === "High") {
+    if (typeof setCustomDropdownValue === "function") {
+      setCustomDropdownValue("todoPrioritySel", "all", "All Priority");
+    } else {
+      priority.value = "all";
+    }
+  }
+  if (typeof renderTodos === "function") renderTodos();
+}
+document.addEventListener("DOMContentLoaded", function(){
+  setTimeout(applySupabaseTodoDefaults, 700);
+});
+</script>
+
+
+<script>
+/* SUPABASE TODO SETTINGS STATUS OVERRIDE */
+async function checkSupabaseStatus() {
+  const client = initSupabaseClient();
+  if (!client) return { ok:false, message:"Supabase key missing" };
+  try {
+    const { error } = await client.from("todos").select("id").limit(1);
+    if (error) return { ok:false, message:error.message };
+    return { ok:true, message:"Supabase TODO Connected" };
+  } catch (err) {
+    return { ok:false, message:"Supabase connection failed" };
+  }
+}
+window.checkApiStatusV7 = async function() {
+  const el = document.getElementById("settingApiStatus");
+  if (!el) return;
+  el.textContent = "Checking...";
+  try {
+    const eventRes = await fetch(API_URL + "?action=getEvents&ts=" + Date.now());
+    if (!eventRes.ok) throw new Error("Sheet response failed");
+    const events = await eventRes.json();
+    if (Array.isArray(events)) {
+      el.textContent = "Google Sheet Occasions Connected";
+      el.style.color = "var(--green)";
+    } else {
+      el.textContent = "Occasions Sheet response issue";
+      el.style.color = "var(--orange)";
+    }
+  } catch(e) {
+    el.textContent = "Occasions Sheet Connection Failed";
+    el.style.color = "var(--red)";
+  }
+};
+</script>
+
 </body>
 </html>
