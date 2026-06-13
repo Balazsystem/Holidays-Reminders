@@ -2084,6 +2084,772 @@ body:not(.admin-mode) .todo-admin-only{display:none!important}
   }
 }
 
+
+/* V7 SETTINGS TAB - APPENDED ONLY */
+.settings-grid-v7{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(260px,1fr));
+  gap:18px;
+}
+.settings-card-v7{
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:20px;
+  position:relative;
+  overflow:hidden;
+}
+.settings-card-v7::after{
+  content:'';
+  position:absolute;
+  right:-36px;
+  top:-36px;
+  width:110px;
+  height:110px;
+  border-radius:50%;
+  background:rgba(79,142,247,.08);
+}
+.settings-card-head-v7{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:18px;
+}
+.settings-card-head-v7 h3{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:18px;
+  color:var(--text);
+}
+.settings-card-head-v7 p{
+  color:var(--text2);
+  font-size:12.5px;
+  margin-top:4px;
+  line-height:1.45;
+}
+.settings-card-head-v7 i{
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  background:rgba(79,142,247,.12);
+  border:1px solid rgba(79,142,247,.22);
+  color:var(--accent);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.settings-btn-v7{
+  margin-top:12px;
+  width:100%;
+}
+.settings-status-v7{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  background:var(--s2);
+  border:1px solid var(--border);
+  border-radius:var(--rs);
+  padding:13px;
+  color:var(--text2);
+  font-size:13px;
+}
+.live-dot-v7{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 0 0 rgba(52,211,153,.6);
+  animation:pulse 2s infinite;
+}
+@media(max-width:800px){
+  .settings-grid-v7{grid-template-columns:1fr;}
+}
+
+
+/* SETTINGS CLEAN DESIGN UPDATE - OVERRIDE ONLY */
+#tab-settings{
+  width:100%;
+}
+.settings-page-clean{
+  width:100%;
+  max-width:1180px;
+  margin:0 auto;
+}
+.settings-hero-clean{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:24px;
+}
+.settings-mode-pill-clean{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 14px;
+  border-radius:999px;
+  background:rgba(79,142,247,.12);
+  border:1px solid rgba(79,142,247,.24);
+  color:var(--accent);
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.settings-section-clean{
+  margin-top:18px;
+}
+.settings-section-head-clean{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:14px;
+  margin-bottom:14px;
+}
+.settings-section-head-clean h3{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:21px;
+  color:var(--text);
+}
+.settings-section-head-clean p{
+  color:var(--text2);
+  font-size:13px;
+  margin-top:4px;
+}
+.settings-grid-clean{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px;
+}
+.admin-grid-clean{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.settings-card-clean{
+  background:linear-gradient(135deg,rgba(17,24,39,.98),rgba(26,34,54,.72));
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:20px;
+  min-height:210px;
+  position:relative;
+  overflow:hidden;
+}
+.settings-card-clean::after{
+  content:'';
+  position:absolute;
+  right:-34px;
+  top:-34px;
+  width:104px;
+  height:104px;
+  border-radius:50%;
+  background:rgba(79,142,247,.08);
+  pointer-events:none;
+}
+.settings-card-icon-clean{
+  width:44px;
+  height:44px;
+  border-radius:15px;
+  background:rgba(79,142,247,.13);
+  border:1px solid rgba(79,142,247,.22);
+  color:var(--accent);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:14px;
+  position:relative;
+  z-index:1;
+}
+.settings-card-clean h4{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:18px;
+  color:var(--text);
+  margin-bottom:6px;
+  position:relative;
+  z-index:1;
+}
+.settings-card-clean p{
+  color:var(--text2);
+  font-size:12.5px;
+  line-height:1.5;
+  margin-bottom:14px;
+  position:relative;
+  z-index:1;
+}
+.settings-card-clean .fi,
+.settings-card-clean .fl,
+.settings-card-clean button,
+.settings-status-clean,
+.theme-toggle-clean,
+.settings-check-clean{
+  position:relative;
+  z-index:1;
+}
+.settings-status-clean{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  background:var(--s2);
+  border:1px solid var(--border);
+  border-radius:var(--rs);
+  padding:13px;
+  color:var(--text2);
+  font-size:13px;
+}
+.settings-full-btn-clean{
+  width:100%;
+  margin-top:12px;
+}
+.theme-toggle-clean{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+}
+.theme-choice-clean{
+  border:1px solid var(--border);
+  background:var(--s2);
+  color:var(--text2);
+  height:42px;
+  border-radius:12px;
+  cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  font-weight:800;
+  font-size:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.theme-choice-clean.active,
+.theme-choice-clean:hover{
+  color:#fff;
+  border-color:rgba(79,142,247,.38);
+  background:linear-gradient(135deg,var(--accent),#6b9ff7);
+}
+.settings-check-clean{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:var(--s2);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  color:var(--text2);
+  font-size:13px;
+  margin-top:10px;
+}
+.settings-check-clean input{
+  accent-color:var(--accent);
+}
+.settings-admin-badge-clean{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:8px 12px;
+  border-radius:999px;
+  background:rgba(52,211,153,.12);
+  border:1px solid rgba(52,211,153,.25);
+  color:var(--green);
+  font-size:12px;
+  font-weight:900;
+}
+.admin-settings-only{
+  display:none;
+}
+body.admin-mode .admin-settings-only{
+  display:block;
+}
+body.admin-mode #settingsModePill span{
+  font-size:0;
+}
+body.admin-mode #settingsModePill span::after{
+  content:'Admin Mode';
+  font-size:12px;
+}
+body.admin-mode #settingsModePill{
+  color:var(--green);
+  border-color:rgba(52,211,153,.26);
+  background:rgba(52,211,153,.12);
+}
+.wide-clean{
+  grid-column:span 1;
+}
+
+/* topbar alignment fix for all tabs after settings update */
+.topbar{
+  min-width:0;
+}
+.topbar-left{
+  flex:1 1 auto;
+  min-width:0;
+}
+.topbar-right{
+  flex:0 0 auto;
+}
+.topbar-title,
+.topbar-sub{
+  max-width:100%;
+}
+@media(max-width:1100px){
+  .settings-grid-clean,
+  .admin-grid-clean{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:760px){
+  .settings-page-clean{
+    max-width:100%;
+  }
+  .settings-hero-clean,
+  .settings-section-head-clean{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  .settings-grid-clean,
+  .admin-grid-clean{
+    grid-template-columns:1fr;
+  }
+  .theme-toggle-clean{
+    grid-template-columns:1fr;
+  }
+}
+
+
+/* SETTINGS TOPBAR OVERLAP FIX - CSS ONLY */
+.topbar{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  min-height:72px !important;
+  gap:14px !important;
+  overflow:visible !important;
+}
+.topbar-left{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  max-width:calc(100% - 360px) !important;
+  overflow:hidden !important;
+}
+.topbar-right{
+  flex:0 0 auto !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  position:relative !important;
+  z-index:5 !important;
+}
+.topbar-title,
+.topbar-sub{
+  max-width:100% !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
+.page{
+  padding-top:34px !important;
+}
+#tab-settings{
+  padding-top:40px !important;
+}
+.settings-hero-clean{
+  margin-top:0 !important;
+  padding-top:0 !important;
+}
+.settings-page-clean{
+  position:relative !important;
+  z-index:1 !important;
+}
+
+/* laptop medium screen spacing */
+@media(max-width:1200px){
+  .topbar-left{
+    max-width:calc(100% - 300px) !important;
+  }
+  .topbar-title{
+    font-size:18px !important;
+  }
+  .topbar-sub{
+    font-size:11px !important;
+  }
+}
+
+/* mobile/tablet topbar: clean 2-row safe layout */
+@media(max-width:768px){
+  .topbar{
+    min-height:82px !important;
+    padding:12px 14px !important;
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) auto !important;
+    align-items:center !important;
+  }
+  .topbar-left{
+    max-width:100% !important;
+    width:100% !important;
+  }
+  .topbar-right{
+    gap:6px !important;
+  }
+  .topbar-date{
+    display:none !important;
+  }
+  .role-chip,
+  .role-pill{
+    max-width:72px !important;
+    height:30px !important;
+    padding:0 10px !important;
+    font-size:11px !important;
+  }
+  .notification-btn,
+  .avatar{
+    width:38px !important;
+    height:38px !important;
+    flex:0 0 38px !important;
+  }
+  #tab-settings{
+    padding-top:28px !important;
+  }
+  .settings-hero-clean{
+    margin-bottom:22px !important;
+  }
+}
+
+@media(max-width:520px){
+  .topbar{
+    min-height:74px !important;
+  }
+  .topbar-title{
+    font-size:15px !important;
+    max-width:185px !important;
+  }
+  .topbar-sub{
+    font-size:10.5px !important;
+    max-width:185px !important;
+  }
+  .role-chip,
+  .role-pill{
+    max-width:58px !important;
+    font-size:10px !important;
+  }
+  .notification-btn,
+  .avatar{
+    width:35px !important;
+    height:35px !important;
+    flex-basis:35px !important;
+  }
+  .page{
+    padding-top:24px !important;
+  }
+}
+
+
+/* SETTINGS OVERLAY PANEL + TOGGLE CLOSE FIX */
+body.settings-overlay-open .topbar{
+  z-index:90 !important;
+}
+body.settings-overlay-open #tab-settings{
+  display:block !important;
+}
+#tab-settings{
+  position:fixed !important;
+  inset:0 !important;
+  z-index:2400 !important;
+  background:rgba(5,8,15,.58) !important;
+  backdrop-filter:blur(8px) !important;
+  -webkit-backdrop-filter:blur(8px) !important;
+  padding:0 !important;
+  overflow-y:auto !important;
+}
+#tab-settings:not(.active){
+  display:none !important;
+}
+#tab-settings .settings-page-clean{
+  width:min(1180px, calc(100vw - 32px)) !important;
+  margin:86px auto 32px !important;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(79,142,247,.16), transparent 34%),
+    radial-gradient(circle at 92% 12%, rgba(167,139,250,.12), transparent 34%),
+    var(--bg) !important;
+  border:1px solid rgba(79,142,247,.18) !important;
+  border-radius:24px !important;
+  padding:28px !important;
+  box-shadow:0 30px 100px rgba(0,0,0,.62) !important;
+}
+.settings-overlay-close-btn{
+  width:40px;
+  height:40px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--s2);
+  color:var(--text2);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  flex-shrink:0;
+}
+.settings-overlay-close-btn:hover{
+  background:var(--s3);
+  color:var(--text);
+}
+.settings-hero-clean{
+  align-items:flex-start !important;
+}
+.settings-hero-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+@media(max-width:760px){
+  #tab-settings .settings-page-clean{
+    width:calc(100vw - 18px) !important;
+    margin:74px auto 18px !important;
+    padding:18px !important;
+    border-radius:20px !important;
+  }
+  .settings-hero-actions{
+    width:100%;
+    justify-content:space-between;
+  }
+}
+
+
+/* APPEARANCE THEME SYSTEM - DARK / DAY / SYSTEM */
+html.theme-day{
+  color-scheme: light;
+}
+html.theme-day body{
+  background:#f4f7fb !important;
+  color:#162033 !important;
+}
+html.theme-day body::before{
+  opacity:.35 !important;
+}
+html.theme-day{
+  --bg:#f4f7fb;
+  --s1:#ffffff;
+  --s2:#eef3fb;
+  --s3:#e3ebf7;
+  --border:rgba(15,23,42,.10);
+  --accent:#2563eb;
+  --purple:#7c3aed;
+  --green:#059669;
+  --orange:#ea580c;
+  --pink:#db2777;
+  --red:#dc2626;
+  --text:#162033;
+  --text2:#64748b;
+  --text3:#94a3b8;
+  --glow:rgba(37,99,235,.16);
+}
+html.theme-day .sidebar,
+html.theme-day .topbar,
+html.theme-day .modal,
+html.theme-day .notification-panel{
+  background:rgba(255,255,255,.92) !important;
+}
+html.theme-day .main,
+html.theme-day .page{
+  background:transparent !important;
+}
+html.theme-day .topbar{
+  box-shadow:0 8px 24px rgba(15,23,42,.05);
+}
+html.theme-day .settings-card-clean,
+html.theme-day .settings-card-v7,
+html.theme-day .ops-panel,
+html.theme-day .todo-board,
+html.theme-day .stat-card,
+html.theme-day .nec,
+html.theme-day .ev-row,
+html.theme-day .priority-todo-card,
+html.theme-day .todo-filter-card,
+html.theme-day .settings-page-clean{
+  background:rgba(255,255,255,.88) !important;
+  border-color:rgba(15,23,42,.10) !important;
+  box-shadow:0 10px 30px rgba(15,23,42,.04);
+}
+html.theme-day .ops-main-card,
+html.theme-day .ops-next-todo,
+html.theme-day .reminder-card{
+  background:linear-gradient(135deg,rgba(37,99,235,.10),rgba(124,58,237,.07)) !important;
+}
+html.theme-day .custom-select-trigger,
+html.theme-day .fi,
+html.theme-day .todo-picker-input,
+html.theme-day .occasion-picker-input,
+html.theme-day .settings-status-clean,
+html.theme-day .settings-status-v7,
+html.theme-day .todo-kpi-box,
+html.theme-day .ops-mini-box,
+html.theme-day .todo-view-box{
+  background:#eef3fb !important;
+  color:#162033 !important;
+  border-color:rgba(15,23,42,.10) !important;
+}
+html.theme-day .custom-options,
+html.theme-day .todo-popover,
+html.theme-day .occasion-popover,
+html.theme-day .profile-menu{
+  background:rgba(255,255,255,.98) !important;
+  border-color:rgba(37,99,235,.20) !important;
+  box-shadow:0 18px 50px rgba(15,23,42,.14) !important;
+}
+html.theme-day .custom-option{
+  color:#64748b !important;
+}
+html.theme-day .custom-option:hover{
+  background:rgba(37,99,235,.10) !important;
+  color:#162033 !important;
+}
+html.theme-day .btn-ghost,
+html.theme-day .act-btn,
+html.theme-day .notification-btn,
+html.theme-day .settings-overlay-close-btn,
+html.theme-day .modal-x{
+  background:#eef3fb !important;
+  color:#64748b !important;
+  border-color:rgba(15,23,42,.10) !important;
+}
+html.theme-day .btn-ghost:hover,
+html.theme-day .notification-btn:hover,
+html.theme-day .settings-overlay-close-btn:hover,
+html.theme-day .modal-x:hover{
+  background:#e3ebf7 !important;
+  color:#162033 !important;
+}
+html.theme-day .badge{
+  box-shadow:none !important;
+}
+html.theme-day .overlay{
+  background:rgba(15,23,42,.28) !important;
+}
+html.theme-day #tab-settings{
+  background:rgba(241,245,249,.55) !important;
+}
+html.theme-day .toast{
+  background:#ffffff !important;
+  color:#162033 !important;
+  border-color:rgba(15,23,42,.10) !important;
+}
+html.theme-day .sidebar-logo,
+html.theme-day .sidebar-footer,
+html.theme-day .view-actions,
+html.theme-day .modal-hd,
+html.theme-day .priority-card-top,
+html.theme-day .priority-card-created{
+  border-color:rgba(15,23,42,.10) !important;
+}
+html.theme-day .nav-item:hover{
+  background:#eef3fb !important;
+}
+html.theme-day .nav-item.active{
+  background:linear-gradient(135deg,rgba(37,99,235,.12),rgba(124,58,237,.08)) !important;
+}
+html.theme-day .section-title,
+html.theme-day .topbar-title,
+html.theme-day .logo-text,
+html.theme-day .todo-title,
+html.theme-day .priority-card-title,
+html.theme-day .nec-name,
+html.theme-day .view-name,
+html.theme-day .modal-title,
+html.theme-day .settings-card-clean h4,
+html.theme-day .settings-section-head-clean h3{
+  color:#162033 !important;
+}
+html.theme-day .section-sub,
+html.theme-day .topbar-sub,
+html.theme-day .rc-desc,
+html.theme-day .todo-desc,
+html.theme-day .priority-card-sub,
+html.theme-day .view-note,
+html.theme-day .settings-card-clean p{
+  color:#64748b !important;
+}
+
+/* System mode follows browser preference */
+@media (prefers-color-scheme: light){
+  html.theme-system{
+    color-scheme: light;
+    --bg:#f4f7fb;
+    --s1:#ffffff;
+    --s2:#eef3fb;
+    --s3:#e3ebf7;
+    --border:rgba(15,23,42,.10);
+    --accent:#2563eb;
+    --purple:#7c3aed;
+    --green:#059669;
+    --orange:#ea580c;
+    --pink:#db2777;
+    --red:#dc2626;
+    --text:#162033;
+    --text2:#64748b;
+    --text3:#94a3b8;
+    --glow:rgba(37,99,235,.16);
+  }
+  html.theme-system body{
+    background:#f4f7fb !important;
+    color:#162033 !important;
+  }
+  html.theme-system .sidebar,
+  html.theme-system .topbar,
+  html.theme-system .modal,
+  html.theme-system .notification-panel{
+    background:rgba(255,255,255,.92) !important;
+  }
+  html.theme-system .settings-card-clean,
+  html.theme-system .settings-card-v7,
+  html.theme-system .ops-panel,
+  html.theme-system .todo-board,
+  html.theme-system .stat-card,
+  html.theme-system .nec,
+  html.theme-system .ev-row,
+  html.theme-system .priority-todo-card,
+  html.theme-system .todo-filter-card,
+  html.theme-system .settings-page-clean{
+    background:rgba(255,255,255,.88) !important;
+    border-color:rgba(15,23,42,.10) !important;
+  }
+  html.theme-system .custom-select-trigger,
+  html.theme-system .fi,
+  html.theme-system .todo-picker-input,
+  html.theme-system .occasion-picker-input,
+  html.theme-system .settings-status-clean,
+  html.theme-system .settings-status-v7,
+  html.theme-system .todo-kpi-box,
+  html.theme-system .ops-mini-box,
+  html.theme-system .todo-view-box{
+    background:#eef3fb !important;
+    color:#162033 !important;
+    border-color:rgba(15,23,42,.10) !important;
+  }
+  html.theme-system .custom-options,
+  html.theme-system .todo-popover,
+  html.theme-system .occasion-popover,
+  html.theme-system .profile-menu{
+    background:rgba(255,255,255,.98) !important;
+    border-color:rgba(37,99,235,.20) !important;
+  }
+  html.theme-system .section-title,
+  html.theme-system .topbar-title,
+  html.theme-system .logo-text,
+  html.theme-system .todo-title,
+  html.theme-system .priority-card-title,
+  html.theme-system .nec-name,
+  html.theme-system .modal-title,
+  html.theme-system .settings-card-clean h4,
+  html.theme-system .settings-section-head-clean h3{
+    color:#162033 !important;
+  }
+  html.theme-system .section-sub,
+  html.theme-system .topbar-sub,
+  html.theme-system .todo-desc,
+  html.theme-system .priority-card-sub,
+  html.theme-system .settings-card-clean p{
+    color:#64748b !important;
+  }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 </head>
@@ -2114,7 +2880,13 @@ body:not(.admin-mode) .todo-admin-only{display:none!important}
     </div>
   </nav>
 
-  <div class="sidebar-footer">
+  
+      <div class="nav-item" onclick="switchTab('settings', this)">
+        <i class="nav-icon fa-solid fa-gear"></i>
+        <span class="nav-label">Settings</span>
+        <span class="nav-badge" id="settingsBadge">V7</span>
+      </div>
+<div class="sidebar-footer">
     <div class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
       <span class="toggle-icon"><i class="fa-solid fa-bars-staggered"></i></span>
       <span class="toggle-label">Collapse</span>
@@ -2511,6 +3283,135 @@ body:not(.admin-mode) .todo-admin-only{display:none!important}
 </main>
 
 <!-- ══════════════ MODAL ══════════════ -->
+
+  <!-- ─── SETTINGS V7 CLEAN ─── -->
+  <div class="page" id="tab-settings">
+    <div class="settings-page-clean">
+      <div class="settings-hero-clean">
+        <div>
+          <div class="section-title">Settings</div>
+          <div class="section-sub">Manage viewer preferences, sheet connection and admin controls.</div>
+        </div>
+        <div class="settings-mode-pill-clean" id="settingsModePill">
+          <i class="fa-solid fa-user-shield"></i>
+          <span>Viewer Mode</span>
+        </div>
+      </div>
+
+      <div class="settings-section-clean">
+        <div class="settings-section-head-clean">
+          <div>
+            <h3>Viewer Settings</h3>
+            <p>Basic options available for all users.</p>
+          </div>
+        </div>
+
+        <div class="settings-grid-clean viewer-grid-clean">
+          <div class="settings-card-clean">
+            <div class="settings-card-icon-clean"><i class="fa-solid fa-link"></i></div>
+            <h4>Sheet Connection</h4>
+            <p>Check whether Google Sheet API is connected.</p>
+            <div class="settings-status-clean">
+              <span class="live-dot-v7"></span>
+              <span id="settingApiStatus">Checking...</span>
+            </div>
+            <button class="btn btn-ghost settings-full-btn-clean" onclick="checkApiStatusV7()">
+              <i class="fa-solid fa-rotate"></i> Test Connection
+            </button>
+          </div>
+
+          <div class="settings-card-clean">
+            <div class="settings-card-icon-clean"><i class="fa-solid fa-circle-half-stroke"></i></div>
+            <h4>Appearance</h4>
+            <p>Choose how the interface should look on this device.</p>
+            <div class="theme-toggle-clean">
+              <button class="theme-choice-clean active" data-theme="dark" onclick="setThemeModeV7('dark', this)">
+                <i class="fa-solid fa-moon"></i> Night
+              </button>
+              <button class="theme-choice-clean" data-theme="light" onclick="setThemeModeV7('light', this)">
+                <i class="fa-solid fa-sun"></i> Day
+              </button>
+              <button class="theme-choice-clean" data-theme="system" onclick="setThemeModeV7('system', this)">
+                <i class="fa-solid fa-desktop"></i> System
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-card-clean">
+            <div class="settings-card-icon-clean"><i class="fa-solid fa-bell"></i></div>
+            <h4>Notifications</h4>
+            <p>Local notification center preference.</p>
+            <label class="settings-check-clean">
+              <input type="checkbox" id="settingNotifications" checked onchange="saveViewerSettingsV7()" />
+              <span>Show notification badge</span>
+            </label>
+            <label class="settings-check-clean">
+              <input type="checkbox" id="settingCompactCards" onchange="saveViewerSettingsV7()" />
+              <span>Compact card view</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section-clean admin-settings-only">
+        <div class="settings-section-head-clean">
+          <div>
+            <h3>Admin Settings</h3>
+            <p>Only visible after admin login.</p>
+          </div>
+          <span class="settings-admin-badge-clean"><i class="fa-solid fa-lock"></i> Admin</span>
+        </div>
+
+        <div class="settings-grid-clean admin-grid-clean">
+          <div class="settings-card-clean">
+            <div class="settings-card-icon-clean"><i class="fa-solid fa-building"></i></div>
+            <h4>Company Display</h4>
+            <p>Update the top title locally on this browser.</p>
+            <label class="fl">Company / App Name</label>
+            <input class="fi" id="settingCompanyName" placeholder="Z System Operations Center" />
+            <button class="btn btn-primary settings-full-btn-clean" onclick="saveCompanySettingV7()">
+              <i class="fa-solid fa-floppy-disk"></i> Save Name
+            </button>
+          </div>
+
+          <div class="settings-card-clean">
+            <div class="settings-card-icon-clean"><i class="fa-solid fa-key"></i></div>
+            <h4>Admin Password</h4>
+            <p>Change frontend admin password for this browser.</p>
+            <label class="fl">New Admin Password</label>
+            <input class="fi" id="settingAdminPassword" type="password" placeholder="Enter new password" />
+            <button class="btn btn-primary settings-full-btn-clean" onclick="saveAdminPasswordV7()">
+              <i class="fa-solid fa-key"></i> Save Password
+            </button>
+          </div>
+
+          <div class="settings-card-clean wide-clean">
+            <div class="settings-card-icon-clean"><i class="fa-solid fa-envelope"></i></div>
+            <h4>Reminder Emails</h4>
+            <p>Default reminder recipients for office alerts.</p>
+            <label class="fl">Email List</label>
+            <textarea class="fi" id="settingEmailList" rows="4" placeholder="balakrbs@gmail.com, suresh.p@zsystem.in"></textarea>
+            <button class="btn btn-primary settings-full-btn-clean" onclick="saveEmailListV7()">
+              <i class="fa-solid fa-floppy-disk"></i> Save Emails
+            </button>
+          </div>
+
+          <div class="settings-card-clean">
+            <div class="settings-card-icon-clean"><i class="fa-solid fa-shield-halved"></i></div>
+            <h4>Admin Controls</h4>
+            <p>Useful quick actions for maintenance.</p>
+            <button class="btn btn-ghost settings-full-btn-clean" onclick="checkApiStatusV7()">
+              <i class="fa-solid fa-plug-circle-check"></i> Verify API
+            </button>
+            <button class="btn btn-ghost settings-full-btn-clean" onclick="localStorage.removeItem('opsActivityLog'); if(typeof renderActivityLog==='function') renderActivityLog(); if(typeof toast==='function') toast('🧹','Activity cleared.','var(--accent)');">
+              <i class="fa-solid fa-broom"></i> Clear Activity Log
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <div class="overlay" id="modalOverlay" onclick="closeOutside(event)">
   <div class="modal occasion-modal">
     <div class="modal-hd">
@@ -4521,5 +5422,229 @@ loadTodos();
   <div class="notification-list" id="notificationList"></div>
 </div>
 
+<script>
+
+/* V7 SETTINGS TAB - APPENDED ONLY */
+function initSettingsV7(){
+  const company = localStorage.getItem("opsCompanyNameV7") || "Z System Operations Center";
+  const emails = localStorage.getItem("opsEmailListV7") || "balakrbs@gmail.com,suresh.p@zsystem.in,tharani.s@zsystem.in";
+  const companyInput = document.getElementById("settingCompanyName");
+  const emailInput = document.getElementById("settingEmailList");
+  if(companyInput) companyInput.value = company;
+  if(emailInput) emailInput.value = emails;
+  applyCompanyNameV7(company);
+  checkApiStatusV7();
+}
+function applyCompanyNameV7(name){
+  document.querySelectorAll(".topbar-title").forEach(el => {
+    if(el.textContent.includes("Z System") || el.textContent.includes("Operations")) el.textContent = name;
+  });
+}
+function saveCompanySettingV7(){
+  const input = document.getElementById("settingCompanyName");
+  const name = (input?.value || "Z System Operations Center").trim();
+  localStorage.setItem("opsCompanyNameV7", name);
+  applyCompanyNameV7(name);
+  if(typeof toast === "function") toast("✅","Company name saved.","var(--green)");
+}
+function saveAdminPasswordV7(){
+  const input = document.getElementById("settingAdminPassword");
+  const value = (input?.value || "").trim();
+  if(!value){
+    if(typeof toast === "function") toast("⚠️","Enter password first.","var(--orange)");
+    return;
+  }
+  localStorage.setItem("opsAdminPasswordV7", value);
+  if(input) input.value = "";
+  if(typeof toast === "function") toast("✅","Admin password saved locally.","var(--green)");
+}
+function saveEmailListV7(){
+  const input = document.getElementById("settingEmailList");
+  const value = (input?.value || "").trim();
+  localStorage.setItem("opsEmailListV7", value);
+  if(typeof toast === "function") toast("✅","Email list saved locally.","var(--green)");
+}
+async function checkApiStatusV7(){
+  const el = document.getElementById("settingApiStatus");
+  if(!el) return;
+  el.textContent = "Checking...";
+  try{
+    const res = await fetch(API_URL + "?action=getEvents&ts=" + Date.now());
+    if(res.ok){
+      el.textContent = "Live Sheet Connected";
+      el.style.color = "var(--green)";
+    }else{
+      el.textContent = "Connection Error";
+      el.style.color = "var(--red)";
+    }
+  }catch(e){
+    el.textContent = "Connection Failed";
+    el.style.color = "var(--red)";
+  }
+}
+document.addEventListener("DOMContentLoaded", function(){
+  setTimeout(initSettingsV7, 600);
+});
+
+</script>
+<script>
+
+/* SETTINGS CLEAN WORKING UPDATE */
+function setThemeModeV7(mode, btn){
+  localStorage.setItem("opsThemeModeV7", mode);
+  document.querySelectorAll(".theme-choice-clean").forEach(b => b.classList.remove("active"));
+  if(btn) btn.classList.add("active");
+  if(typeof toast === "function") toast("✅", "Theme preference saved: " + mode, "var(--green)");
+}
+function saveViewerSettingsV7(){
+  localStorage.setItem("opsNotificationsV7", document.getElementById("settingNotifications")?.checked ? "on" : "off");
+  localStorage.setItem("opsCompactCardsV7", document.getElementById("settingCompactCards")?.checked ? "on" : "off");
+  if(typeof toast === "function") toast("✅","Viewer settings saved.","var(--green)");
+}
+function applySettingsCleanV7(){
+  const mode = localStorage.getItem("opsThemeModeV7") || "dark";
+  document.querySelectorAll(".theme-choice-clean").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.theme === mode);
+  });
+  const n = document.getElementById("settingNotifications");
+  const c = document.getElementById("settingCompactCards");
+  if(n) n.checked = (localStorage.getItem("opsNotificationsV7") || "on") === "on";
+  if(c) c.checked = localStorage.getItem("opsCompactCardsV7") === "on";
+}
+document.addEventListener("DOMContentLoaded", function(){
+  setTimeout(applySettingsCleanV7, 800);
+});
+
+</script>
+<script>
+
+/* SETTINGS OVERLAY TOGGLE LOGIC */
+let previousTabBeforeSettingsV7 = "dashboard";
+let previousNavBeforeSettingsV7 = null;
+
+(function(){
+  const originalSwitchTab = window.switchTab;
+
+  window.switchTab = function(name, el){
+    if(name === "settings"){
+      const settingsPage = document.getElementById("tab-settings");
+      const isOpen = settingsPage && settingsPage.classList.contains("active");
+
+      if(isOpen){
+        closeSettingsOverlayV7();
+        return;
+      }
+
+      const current = document.querySelector(".page.active:not(#tab-settings)");
+      if(current && current.id){
+        previousTabBeforeSettingsV7 = current.id.replace("tab-","");
+      }
+
+      previousNavBeforeSettingsV7 = document.querySelector(".nav-item.active:not([onclick*=\"settings\"])");
+
+      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+      if(settingsPage) settingsPage.classList.add("active");
+
+      document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
+      if(el) el.classList.add("active");
+
+      document.body.classList.add("settings-overlay-open");
+
+      if(typeof initSettingsV7 === "function") initSettingsV7();
+      if(typeof applySettingsCleanV7 === "function") applySettingsCleanV7();
+      return;
+    }
+
+    document.body.classList.remove("settings-overlay-open");
+
+    if(typeof originalSwitchTab === "function"){
+      return originalSwitchTab(name, el);
+    }
+  };
+})();
+
+function closeSettingsOverlayV7(){
+  const settingsPage = document.getElementById("tab-settings");
+  if(settingsPage) settingsPage.classList.remove("active");
+
+  document.body.classList.remove("settings-overlay-open");
+
+  const fallbackTab = document.getElementById("tab-" + (previousTabBeforeSettingsV7 || "dashboard"));
+  if(fallbackTab) fallbackTab.classList.add("active");
+
+  document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
+
+  if(previousNavBeforeSettingsV7){
+    previousNavBeforeSettingsV7.classList.add("active");
+  }else{
+    const dashNav = document.querySelector(".nav-item[onclick*=\"dashboard\"]");
+    if(dashNav) dashNav.classList.add("active");
+  }
+}
+
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && document.body.classList.contains("settings-overlay-open")){
+    closeSettingsOverlayV7();
+  }
+});
+
+document.addEventListener("click", function(e){
+  const settingsPage = document.getElementById("tab-settings");
+  const panel = document.querySelector("#tab-settings .settings-page-clean");
+  if(document.body.classList.contains("settings-overlay-open") && settingsPage && panel){
+    if(e.target === settingsPage){
+      closeSettingsOverlayV7();
+    }
+  }
+});
+
+</script>
+<script>
+
+/* APPEARANCE THEME SYSTEM - DARK / DAY / SYSTEM */
+function applyThemeModeV7(mode){
+  const html = document.documentElement;
+  html.classList.remove("theme-dark", "theme-day", "theme-system");
+
+  if(mode === "light"){
+    html.classList.add("theme-day");
+  }else if(mode === "system"){
+    html.classList.add("theme-system");
+  }else{
+    html.classList.add("theme-dark");
+  }
+
+  document.querySelectorAll(".theme-choice-clean").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.theme === mode);
+  });
+}
+
+window.setThemeModeV7 = function(mode, btn){
+  localStorage.setItem("opsThemeModeV7", mode);
+  applyThemeModeV7(mode);
+  if(typeof toast === "function") toast("✅", "Theme changed to " + (mode === "light" ? "Day" : mode === "dark" ? "Night" : "System"), "var(--green)");
+};
+
+(function(){
+  const savedTheme = localStorage.getItem("opsThemeModeV7") || "dark";
+  applyThemeModeV7(savedTheme);
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(() => applyThemeModeV7(localStorage.getItem("opsThemeModeV7") || "dark"), 300);
+  });
+
+  if(window.matchMedia){
+    const mq = window.matchMedia("(prefers-color-scheme: light)");
+    if(mq && mq.addEventListener){
+      mq.addEventListener("change", function(){
+        if((localStorage.getItem("opsThemeModeV7") || "dark") === "system"){
+          applyThemeModeV7("system");
+        }
+      });
+    }
+  }
+})();
+
+</script>
 </body>
 </html>
