@@ -52,14 +52,15 @@
      Paste your Supabase Publishable key below.
   */
   const SUPABASE_URL = "https://jnhlgyobtatlzxmfziuu.supabase.co";
-  // Paste the public anon / publishable key here OR save it from Settings → Admin Settings → Supabase TODO Key.
-  const SUPABASE_KEY = "";
+  // Supabase public anon / publishable key is fixed here.
+  // Do not show or type this key from the Settings screen.
+  const SUPABASE_KEY = "sb_publishable_oEPSGM0uXvaOsTlK9ZjAlg_Dfraikya";
 
   let supabaseClient = null;
   let supabaseClientKeyCache = "";
 
   function getSupabasePublishableKey() {
-    return (localStorage.getItem("opsSupabasePublishableKeyV1") || SUPABASE_KEY || "").trim();
+    return (SUPABASE_KEY || "").trim();
   }
 
   function initSupabaseClient() {
@@ -2918,6 +2919,67 @@ html.theme-day .settings-card-clean p{
   color:var(--orange);
 }
 
+
+
+/* MERGED CONNECTION CARD - SETTINGS */
+.connection-merged-card-clean{
+  grid-column: span 1;
+}
+.connection-status-list-clean{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  margin-top:18px;
+}
+.connection-status-row-clean{
+  min-height:56px;
+  background:var(--s2);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:10px 12px 10px 15px;
+  display:grid;
+  grid-template-columns:1fr 42px;
+  align-items:center;
+  gap:10px;
+}
+.connection-status-text-clean{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+  color:var(--green);
+  font-weight:700;
+  font-size:14px;
+  line-height:1.35;
+}
+.connection-status-text-clean span:last-child{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.connection-icon-btn-clean{
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  border:1px solid rgba(79,142,247,.28);
+  background:rgba(79,142,247,.10);
+  color:var(--accent);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:all .2s ease;
+}
+.connection-icon-btn-clean:hover{
+  background:rgba(79,142,247,.18);
+  transform:translateY(-1px);
+}
+@media(max-width:640px){
+  .connection-status-row-clean{grid-template-columns:1fr 38px;}
+  .connection-status-text-clean{font-size:12.5px;}
+  .connection-icon-btn-clean{width:36px;height:36px;}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3376,32 +3438,33 @@ html.theme-day .settings-card-clean p{
         </div>
 
         <div class="settings-grid-clean viewer-grid-clean">
-          <div class="settings-card-clean">
+          <div class="settings-card-clean connection-merged-card-clean">
             <div class="settings-card-icon-clean"><i class="fa-solid fa-link"></i></div>
-            <h4>Sheet Connection</h4>
-            <p>Check whether Google Sheet is connected.</p>
-            <div class="settings-status-clean">
-              <span class="live-dot-v7"></span>
-              <span id="settingApiStatus">Checking...</span>
-            </div>
-            <button class="btn btn-ghost settings-full-btn-clean" onclick="checkApiStatusV7()">
-              <i class="fa-solid fa-rotate"></i> Test Connection
-            </button>
-          </div>
+            <h4>Connection Status</h4>
+            <p>Check whether Google Sheet Occasions API and Supabase TODO database are connected.</p>
 
-          <div class="settings-card-clean">
-            <div class="settings-card-icon-clean"><i class="fa-solid fa-database"></i></div>
-            <h4>Supabase Connection</h4>
-            <p>Check whether TODO database is connected.</p>
-            <div class="settings-status-clean">
-              <span class="live-dot-v7"></span>
-              <span id="settingSupabaseStatus">Checking...</span>
-            </div>
-            <button class="btn btn-ghost settings-full-btn-clean" onclick="checkSupabaseStatusV7()">
-              <i class="fa-solid fa-rotate"></i> Test Supabase
-            </button>
-          </div>
+            <div class="connection-status-list-clean">
+              <div class="connection-status-row-clean">
+                <div class="connection-status-text-clean">
+                  <span class="live-dot-v7"></span>
+                  <span id="settingApiStatus">Checking...</span>
+                </div>
+                <button class="connection-icon-btn-clean" onclick="checkApiStatusV7()" title="Test Sheet Connection">
+                  <i class="fa-solid fa-rotate"></i>
+                </button>
+              </div>
 
+              <div class="connection-status-row-clean">
+                <div class="connection-status-text-clean">
+                  <span class="live-dot-v7"></span>
+                  <span id="settingSupabaseStatus">Checking...</span>
+                </div>
+                <button class="connection-icon-btn-clean" onclick="checkSupabaseStatusV7()" title="Test Supabase Connection">
+                  <i class="fa-solid fa-rotate"></i>
+                </button>
+              </div>
+            </div>
+          </div>
 
           <div class="settings-card-clean">
             <div class="settings-card-icon-clean"><i class="fa-solid fa-circle-half-stroke"></i></div>
@@ -3454,17 +3517,6 @@ html.theme-day .settings-card-clean p{
             <input class="fi" id="settingAdminPassword" type="password" placeholder="Enter new password" />
             <button class="btn btn-primary settings-full-btn-clean" onclick="saveAdminPasswordV7()">
               <i class="fa-solid fa-key"></i> Save Password
-            </button>
-          </div>
-
-          <div class="settings-card-clean wide-clean">
-            <div class="settings-card-icon-clean"><i class="fa-solid fa-database"></i></div>
-            <h4>Supabase TODO Key</h4>
-            <p>Paste the Supabase public anon / publishable key here. This is required for TODO cards to fetch from the Supabase todos table.</p>
-            <label class="fl">Publishable / anon public key</label>
-            <input class="fi" id="settingSupabaseKey" type="password" placeholder="Paste Supabase anon public key" autocomplete="off" />
-            <button class="btn btn-primary settings-full-btn-clean" onclick="saveSupabaseKeyV7()">
-              <i class="fa-solid fa-floppy-disk"></i> Save Supabase Key
             </button>
           </div>
 
@@ -5421,9 +5473,7 @@ loadTodos();
 function initSettingsV7(){
   const emails = localStorage.getItem("opsEmailListV7") || "balakrbs@gmail.com,suresh.p@zsystem.in,tharani.s@zsystem.in";
   const emailInput = document.getElementById("settingEmailList");
-  const supabaseInput = document.getElementById("settingSupabaseKey");
   if(emailInput) emailInput.value = emails;
-  if(supabaseInput) supabaseInput.value = getSupabasePublishableKey();
   checkApiStatusV7();
   checkSupabaseStatusV7();
 }
@@ -5743,6 +5793,96 @@ window.checkApiStatusV7 = async function() {
     el.style.color = "var(--red)";
   }
 };
+</script>
+
+
+
+<style id="mobile-settings-sidebar-fix-v8">
+/* V8 FIX: mobile settings sidebar close/collapse behavior */
+@media (max-width: 768px){
+  .sidebar.mob-open{ transform: translateX(0) !important; }
+  .sidebar.is-collapsed.mob-open{
+    width: var(--sc) !important;
+    transform: translateX(0) !important;
+  }
+  .sidebar.is-collapsed.mob-open .sidebar-logo{ padding:22px 0 !important; justify-content:center !important; }
+  .sidebar.is-collapsed.mob-open .logo-text,
+  .sidebar.is-collapsed.mob-open .nav-label,
+  .sidebar.is-collapsed.mob-open .toggle-label,
+  .sidebar.is-collapsed.mob-open .nav-badge{
+    display:none !important;
+    max-width:0 !important;
+    opacity:0 !important;
+  }
+  .sidebar.is-collapsed.mob-open .nav-item,
+  .sidebar.is-collapsed.mob-open .sidebar-toggle{
+    justify-content:center !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+    gap:0 !important;
+  }
+  body.settings-overlay-open .sidebar{ z-index:1800 !important; }
+  body.settings-overlay-open #tab-settings{ z-index:2400 !important; }
+  body.settings-overlay-open .sidebar.mob-open{ transform:translateX(-100%) !important; }
+  body.settings-overlay-open .sidebar-overlay{ display:none !important; }
+}
+</style>
+
+
+<script id="mobile-settings-sidebar-fix-v8-js">
+(function(){
+  function isMobileOps(){ return window.matchMedia && window.matchMedia('(max-width: 768px)').matches; }
+
+  window.closeMobileSafeV8 = function(){
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('overlay');
+    if(sidebar) sidebar.classList.remove('mob-open','show');
+    if(overlay) overlay.classList.remove('show');
+  };
+
+  var oldOpenMobile = window.openMobile;
+  window.openMobile = function(){
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('overlay');
+    if(sidebar){ sidebar.classList.add('mob-open'); sidebar.classList.remove('show'); }
+    if(overlay) overlay.classList.add('show');
+  };
+
+  window.closeMobile = function(){ window.closeMobileSafeV8(); };
+
+  var oldToggleSidebar = window.toggleSidebar;
+  window.toggleSidebar = function(){
+    var sidebar = document.getElementById('sidebar');
+    var main = document.getElementById('main');
+    if(!sidebar) return;
+
+    /* In mobile settings overlay, collapse button should close sidebar cleanly */
+    if(isMobileOps() && document.body.classList.contains('settings-overlay-open')){
+      window.closeMobileSafeV8();
+      return;
+    }
+
+    collapsed = !collapsed;
+    sidebar.classList.toggle('is-collapsed', collapsed);
+    if(main) main.classList.toggle('is-expanded', collapsed);
+  };
+
+  var oldSwitchTabV8 = window.switchTab;
+  window.switchTab = function(name, el){
+    var result = oldSwitchTabV8 ? oldSwitchTabV8(name, el) : undefined;
+    if(isMobileOps()){
+      setTimeout(function(){ window.closeMobileSafeV8(); }, 0);
+    }
+    return result;
+  };
+
+  document.addEventListener('click', function(e){
+    var settingsNav = e.target.closest && e.target.closest('[onclick*=settings]');
+    if(settingsNav && isMobileOps()){
+      setTimeout(function(){ window.closeMobileSafeV8(); }, 0);
+    }
+  }, true);
+})();
 </script>
 
 </body>
