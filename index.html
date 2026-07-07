@@ -42,7 +42,7 @@
 </div>
 
 <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbz9TaNR2iMbVLrvO_nH1NoNJwA0FXA2imSEjIIacrQygVehOoxTfKepdmlhLZRuoCoioQ/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbzylHE6DXsu7RKeCZSR7SmO175XBcioT7IyfUDmo2FkKXvbLqKY6v5qWI6Qs26dHiRmuw/exec";
 </script>
 
 <script>
@@ -6352,231 +6352,1338 @@ document.addEventListener("DOMContentLoaded", function(){
 
 
 
-<!-- PATCH V14: Admin auto-role + signup username + viewer login fix (append-only) -->
-<style id="auth-admin-username-patch-v14">
-  #authUsernameFieldV14{display:none;}
-  body.auth-signup-mode #authUsernameFieldV14{display:block;}
-  .sidebar-profile-role-v14{
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-    margin-top:6px;
-    padding:4px 9px;
-    border-radius:999px;
-    font-size:10.5px;
-    font-weight:800;
-    background:rgba(79,142,247,.12);
-    color:var(--accent);
-    border:1px solid rgba(79,142,247,.24);
+<!-- V15 PATCH: Settings close + Auth username/Admin + user-wise TODO V2 -->
+<style id="v15-settings-auth-todo-fixes">
+  .settings-overlay-close-btn-v15{
+    width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.10);
+    background:rgba(26,34,54,.82);color:var(--text2);display:inline-flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:all .2s;font-size:15px;flex-shrink:0;
   }
-  body.admin-mode .sidebar-profile-role-v14{
-    background:rgba(52,211,153,.12);
-    color:var(--green);
-    border-color:rgba(52,211,153,.25);
-  }
+  .settings-overlay-close-btn-v15:hover{background:rgba(248,113,113,.16);border-color:rgba(248,113,113,.34);color:var(--red);transform:translateY(-1px)}
+  .auth-field-username-v15{display:none;}
+  body.auth-signup-mode-v15 .auth-field-username-v15{display:block;}
   @media(max-width:768px){
-    body.auth-signup-mode .auth-card{max-height:calc(100vh - 32px);overflow-y:auto;}
+    .sidebar-footer{display:none!important;}
+    .sidebar{overflow-y:auto!important;}
+    .settings-overlay-close-btn-v15{width:36px;height:36px;}
+    .settings-hero-clean{gap:12px;align-items:flex-start!important;}
   }
 </style>
 
-<script id="auth-admin-username-patch-v14-js">
+<script id="v15-auth-admin-username-user-todo-patch">
 (function(){
-  const ADMIN_EMAILS_V14 = ["admin@zsystem.in"];
+  'use strict';
 
-  function byId(id){ return document.getElementById(id); }
-  function cleanEmail(v){ return String(v || "").trim().toLowerCase(); }
-  function isAdminEmailV14(email){ return ADMIN_EMAILS_V14.includes(cleanEmail(email)); }
-  function fallbackNameFromEmailV14(email){
-    return String(email || "User").split("@")[0].replace(/[._-]+/g," ").trim().replace(/\b\w/g, c => c.toUpperCase()) || "User";
+  const ADMIN_EMAILS_V15 = ["admin@zsystem.in"];
+  window.ADMIN_EMAILS = window.ADMIN_EMAILS || ADMIN_EMAILS_V15;
+
+  function el(id){ return document.getElementById(id); }
+  function safeLower(v){ return String(v || '').trim().toLowerCase(); }
+  function getActiveUser(){ return window.currentUserV1 || null; }
+  function isAdminEmail(email){ return (window.ADMIN_EMAILS || ADMIN_EMAILS_V15).map(safeLower).includes(safeLower(email)); }
+  window.isCurrentAdminV15 = function(){ return isAdminEmail(getActiveUser()?.email); };
+  function authNameFromUser(user){
+    const meta = user?.user_metadata || {};
+    const saved = meta.username || meta.full_name || meta.name || '';
+    return (saved || (user?.email || 'User').split('@')[0].replace(/[._-]+/g,' ')).trim().toUpperCase() || 'USER';
+  }
+  function authInitials(name, email){
+    const initials = String(name || '').split(/\s+/).filter(Boolean).map(x=>x[0]).join('').slice(0,2);
+    return (initials || String(email || 'US').slice(0,2)).toUpperCase();
   }
 
-  window.getProfileNameV14 = async function(user){
-    const email = user?.email || "";
-    const metaName = user?.user_metadata?.username || user?.user_metadata?.full_name || user?.user_metadata?.name;
-    if(metaName) return String(metaName).trim();
+  function ensureSettingsCloseButton(){
+    const hero = document.querySelector('#tab-settings .settings-hero-clean');
+    if(!hero || el('settingsCloseBtnV15')) return;
+    const right = document.createElement('div');
+    right.className = 'settings-hero-actions-v15';
+    right.style.display = 'flex';
+    right.style.alignItems = 'center';
+    right.style.gap = '10px';
+    const oldPill = el('settingsModePill');
+    if(oldPill) right.appendChild(oldPill);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'settingsCloseBtnV15';
+    btn.className = 'settings-overlay-close-btn-v15';
+    btn.title = 'Close Settings';
+    btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    btn.onclick = function(){
+      if(typeof window.switchTab === 'function') window.switchTab('dashboard', document.querySelector('.nav-item'));
+      if(typeof window.closeMobile === 'function') window.closeMobile();
+    };
+    right.appendChild(btn);
+    hero.appendChild(right);
+  }
 
-    const client = typeof getAuthClientV1 === "function" ? getAuthClientV1() : (typeof initSupabaseClient === "function" ? initSupabaseClient() : null);
-    if(client && user?.id){
-      try{
-        const { data, error } = await client
-          .from("profiles")
-          .select("username, full_name")
-          .eq("id", user.id)
-          .maybeSingle();
-        if(!error && data){
-          return (data.username || data.full_name || fallbackNameFromEmailV14(email)).trim();
-        }
-      }catch(e){
-        console.warn("Profile fetch skipped:", e?.message || e);
-      }
-    }
-    return fallbackNameFromEmailV14(email);
+  function ensureUsernameField(){
+    if(el('authUsername')) return;
+    const emailField = el('authEmail')?.closest('.auth-field');
+    if(!emailField) return;
+    const box = document.createElement('div');
+    box.className = 'auth-field auth-field-username-v15';
+    box.innerHTML = '<label>Username</label><input type="text" id="authUsername" placeholder="Enter display name" autocomplete="name" />';
+    emailField.parentNode.insertBefore(box, emailField);
+  }
+
+  const oldSetAuthMode = window.setAuthModeV1;
+  window.setAuthModeV1 = function(mode){
+    if(typeof oldSetAuthMode === 'function') oldSetAuthMode(mode);
+    window.authModeV1 = mode === 'signup' ? 'signup' : 'login';
+    document.body.classList.toggle('auth-signup-mode-v15', window.authModeV1 === 'signup');
   };
 
-  async function saveProfileV14(user, username){
-    const client = typeof getAuthClientV1 === "function" ? getAuthClientV1() : null;
+  async function saveProfile(user, username){
+    const client = typeof initSupabaseClient === 'function' ? initSupabaseClient() : null;
     if(!client || !user?.id) return;
-    const email = cleanEmail(user.email);
-    const finalName = (username || user.user_metadata?.username || fallbackNameFromEmailV14(email)).trim();
+    const cleanName = (username || authNameFromUser(user)).trim();
     try{
-      const { error } = await client.from("profiles").upsert({
+      await client.from('profiles').upsert({
         id: user.id,
-        username: finalName,
-        full_name: finalName,
-        email: email,
-        role: isAdminEmailV14(email) ? "admin" : "viewer",
+        username: cleanName,
+        email: user.email,
+        role: isAdminEmail(user.email) ? 'admin' : 'viewer',
         updated_at: new Date().toISOString()
-      }, { onConflict: "id" });
-      if(error) console.warn("Profile save skipped:", error.message);
-    }catch(e){
-      console.warn("Profile table not available yet:", e?.message || e);
+      }, { onConflict: 'id' });
+    }catch(err){
+      console.warn('profiles upsert skipped/failed:', err?.message || err);
     }
   }
 
-  window.applyAutoRoleV14 = function(user){
-    const email = cleanEmail(user?.email);
-    const admin = isAdminEmailV14(email);
+  async function loadProfile(user){
+    const client = typeof initSupabaseClient === 'function' ? initSupabaseClient() : null;
+    if(!client || !user?.id) return null;
     try{
-      currentRole = admin ? "admin" : "viewer";
-      localStorage.setItem("role", currentRole);
-      if(admin) localStorage.setItem("opsAdminModeV1", "1");
-      else localStorage.removeItem("opsAdminModeV1");
-    }catch(e){}
-    document.body.classList.toggle("admin-mode", admin);
-    if(typeof applyRoleUI === "function") applyRoleUI();
-    const role = byId("roleChip");
-    if(role) role.textContent = admin ? "Admin" : "Viewer";
-    const sideRole = byId("sidebarProfileRoleV14");
-    if(sideRole) sideRole.innerHTML = admin ? '<i class="fa-solid fa-user-shield"></i> Admin' : '<i class="fa-solid fa-eye"></i> Viewer';
-  };
+      const { data, error } = await client.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      if(error) throw error;
+      return data || null;
+    }catch(err){
+      console.warn('profiles load skipped/failed:', err?.message || err);
+      return null;
+    }
+  }
 
-  window.updateSidebarUserV14 = async function(user){
-    const email = user?.email || "User";
-    const name = await window.getProfileNameV14(user);
-    const initials = String(name || email)
-      .split(/\s+/).filter(Boolean).map(x=>x[0]).join("").slice(0,2).toUpperCase() || email.slice(0,2).toUpperCase();
-    const av = byId("sidebarProfileAvatarV13");
-    const nm = byId("sidebarProfileNameV13");
-    const em = byId("sidebarProfileEmailV13");
-    if(av) av.textContent = initials;
+  window.updateSidebarUserV13 = async function(user){
+    const email = user?.email || 'User';
+    const profile = user?.id ? await loadProfile(user) : null;
+    const name = (profile?.username || authNameFromUser(user)).trim().toUpperCase() || 'USER';
+    const av = el('sidebarProfileAvatarV13');
+    const nm = el('sidebarProfileNameV13');
+    const em = el('sidebarProfileEmailV13');
+    if(av) av.textContent = authInitials(name, email);
     if(nm) nm.textContent = name;
     if(em) em.textContent = email;
-    window.applyAutoRoleV14(user);
   };
 
-  function ensureUsernameFieldV14(){
-    if(byId("authUsernameFieldV14")) return;
-    const emailField = byId("authEmail")?.closest(".auth-field");
-    if(!emailField) return;
-    const field = document.createElement("div");
-    field.className = "auth-field";
-    field.id = "authUsernameFieldV14";
-    field.innerHTML = '<label>USERNAME</label><input type="text" id="authUsernameV14" placeholder="Enter your name" autocomplete="name" />';
-    emailField.parentNode.insertBefore(field, emailField);
-  }
-
-  function ensureSidebarRoleV14(){
-    if(byId("sidebarProfileRoleV14")) return;
-    const emailEl = byId("sidebarProfileEmailV13");
-    if(!emailEl) return;
-    const role = document.createElement("div");
-    role.id = "sidebarProfileRoleV14";
-    role.className = "sidebar-profile-role-v14";
-    role.innerHTML = '<i class="fa-solid fa-eye"></i> Viewer';
-    emailEl.insertAdjacentElement("afterend", role);
-  }
-
-  const originalSetAuthMode = window.setAuthModeV1;
-  window.setAuthModeV1 = function(mode){
-    authModeV1 = mode === "signup" ? "signup" : "login";
-    if(typeof originalSetAuthMode === "function") originalSetAuthMode(authModeV1);
-    byId("authLoginTab")?.classList.toggle("active", authModeV1 === "login");
-    byId("authSignupTab")?.classList.toggle("active", authModeV1 === "signup");
-    document.body.classList.toggle("auth-signup-mode", authModeV1 === "signup");
-    const btn = byId("authSubmitBtn");
-    if(btn) btn.textContent = authModeV1 === "signup" ? "Create Account" : "Login";
-    if(authModeV1 === "login"){
-      setAuthMessageV1("Enter your login details.", "");
-    }else{
-      setAuthMessageV1("Create a new user account.", "");
+  window.applyRoleByUserV15 = function(user){
+    const admin = !!user && isAdminEmail(user.email);
+    document.body.classList.toggle('admin-mode', admin);
+    try { localStorage.setItem('opsAdminModeV1', admin ? 'true' : 'false'); } catch(e) {}
+    const roleChip = document.getElementById('roleChip') || document.querySelector('.role-chip');
+    if(roleChip) roleChip.textContent = admin ? 'Admin' : 'Viewer';
+    const modePill = el('settingsModePill');
+    if(modePill){
+      const span = modePill.querySelector('span');
+      if(span) span.textContent = admin ? 'Admin Mode' : 'Viewer Mode';
     }
+  };
+
+  const oldApplySession = window.applyAuthSessionV1;
+  window.applyAuthSessionV1 = async function(session){
+    if(typeof oldApplySession === 'function') await oldApplySession(session);
+    const user = session?.user || null;
+    window.currentUserV1 = user;
+    window.applyRoleByUserV15(user);
+    if(user && typeof window.updateSidebarUserV13 === 'function') await window.updateSidebarUserV13(user);
   };
 
   window.submitAuthV1 = async function(){
-    const client = typeof getAuthClientV1 === "function" ? getAuthClientV1() : null;
+    const client = typeof getAuthClientV1 === 'function' ? getAuthClientV1() : initSupabaseClient();
     if(!client) return;
+    const email = (el('authEmail')?.value || '').trim();
+    const password = el('authPassword')?.value || '';
+    const username = (el('authUsername')?.value || '').trim();
+    const btn = el('authSubmitBtn');
+    const mode = window.authModeV1 === 'signup' ? 'signup' : 'login';
 
-    /* Fix: decide from active tab also, so Login never accidentally calls signup. */
-    const signupActive = byId("authSignupTab")?.classList.contains("active");
-    const mode = signupActive ? "signup" : "login";
-    authModeV1 = mode;
-
-    const email = (byId("authEmail")?.value || "").trim();
-    const password = byId("authPassword")?.value || "";
-    const username = (byId("authUsernameV14")?.value || "").trim();
-    const btn = byId("authSubmitBtn");
-
-    if(!email || !password){ setAuthMessageV1("Email and password required.", "err"); return; }
-    if(password.length < 6){ setAuthMessageV1("Password must be at least 6 characters.", "err"); return; }
-    if(mode === "signup" && !username){ setAuthMessageV1("Username required for signup.", "err"); return; }
+    if(!email || !password){ setAuthMessageV1('Email and password required.', 'err'); return; }
+    if(password.length < 6){ setAuthMessageV1('Password must be at least 6 characters.', 'err'); return; }
+    if(mode === 'signup' && !username){ setAuthMessageV1('Username required for signup.', 'err'); return; }
 
     try{
       if(btn) btn.disabled = true;
-      if(typeof showOpsPreloaderV13 === "function") showOpsPreloaderV13(mode === "login" ? "Logging in..." : "Creating account...");
-      setAuthMessageV1(mode === "login" ? "Logging in..." : "Creating account...", "");
+      if(typeof showOpsPreloaderV13 === 'function') showOpsPreloaderV13(mode === 'login' ? 'Logging in...' : 'Creating account...');
+      setAuthMessageV1(mode === 'login' ? 'Logging in...' : 'Creating account...', '');
 
-      const res = mode === "login"
+      const res = mode === 'login'
         ? await client.auth.signInWithPassword({ email, password })
         : await client.auth.signUp({
             email,
             password,
-            options: { data: { username, full_name: username, role: isAdminEmailV14(email) ? "admin" : "viewer" } }
+            options: { data: { username, full_name: username, role: isAdminEmail(email) ? 'admin' : 'viewer' } }
           });
-
       if(res.error) throw res.error;
 
-      if(mode === "signup"){
-        await saveProfileV14(res.data?.user, username);
-        if(!res.data?.session){
-          if(typeof hideOpsPreloaderV13 === "function") hideOpsPreloaderV13();
-          setAuthMessageV1("Account created. Check email confirmation, then login.", "ok");
-          window.setAuthModeV1("login");
-          return;
-        }
+      if(mode === 'signup' && res.data?.user){
+        await saveProfile(res.data.user, username);
+      }
+
+      if(mode === 'signup' && !res.data?.session){
+        setAuthMessageV1('Account created. Login now.', 'ok');
+        window.setAuthModeV1('login');
+        return;
       }
 
       await applyAuthSessionV1(res.data?.session || null);
-      setAuthMessageV1(mode === "login" ? "Login successful." : "Account created and logged in.", "ok");
+      setAuthMessageV1('Login successful.', 'ok');
     }catch(err){
-      console.error("Auth error:", err);
-      let msg = err?.message || "Authentication failed.";
-      if(mode === "login" && /already registered/i.test(msg)) msg = "This email already exists. Please use Login, not Signup.";
-      setAuthMessageV1(msg, "err");
+      console.error('Auth error:', err);
+      setAuthMessageV1(err?.message || 'Authentication failed.', 'err');
     }finally{
       if(btn) btn.disabled = false;
-      if(typeof hideOpsPreloaderV13 === "function") setTimeout(hideOpsPreloaderV13, 350);
+      if(typeof hideOpsPreloaderV13 === 'function') setTimeout(hideOpsPreloaderV13, 350);
     }
   };
 
-  const originalApplySession = window.applyAuthSessionV1;
-  window.applyAuthSessionV1 = async function(session){
-    if(typeof originalApplySession === "function") await originalApplySession(session);
-    if(session?.user){
-      await window.updateSidebarUserV14(session.user);
-    }else{
-      document.body.classList.remove("admin-mode");
-      try{ currentRole = "viewer"; localStorage.setItem("role", "viewer"); }catch(e){}
-      if(typeof applyRoleUI === "function") applyRoleUI();
+  // TODO V2: user_id filtering. Admin sees all TODO; normal users see only their own TODO.
+  function todoSelectForCurrentUser(client){
+    let q = client.from('todos').select('*');
+    const user = getActiveUser();
+    if(user && !window.isCurrentAdminV15()) q = q.eq('user_id', user.id);
+    return q;
+  }
+  function scopeMutationForCurrentUser(q){
+    const user = getActiveUser();
+    if(user && !window.isCurrentAdminV15()) return q.eq('user_id', user.id);
+    return q;
+  }
+
+  window.loadTodos = async function(){
+    const client = initSupabaseClient();
+    const note = el('todoDbNoteSupabase');
+    const user = getActiveUser();
+    if(!client || !user){
+      window.todos = [];
+      if(typeof renderTodos === 'function') renderTodos('Please login to load your TODO list.');
+      if(typeof updateTodoStats === 'function') updateTodoStats();
+      return;
+    }
+    try{
+      if(note) note.innerHTML = '<i class="fa-solid fa-database"></i> Loading TODO data from Supabase...';
+      let res = await todoSelectForCurrentUser(client)
+        .order('position', { ascending:true, nullsFirst:false })
+        .order('created_at', { ascending:false });
+      if(res.error){
+        console.warn('Sorted user TODO fetch failed. Retrying plain select:', res.error.message);
+        res = await todoSelectForCurrentUser(client);
+      }
+      if(res.error) throw res.error;
+      window.todos = (res.data || []).map(normalizeTodo).sort((a,b)=>{
+        const pa = Number(a.position || 9999), pb = Number(b.position || 9999);
+        if(pa !== pb) return pa - pb;
+        return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+      });
+      if(typeof renderTodos === 'function') renderTodos();
+      if(typeof initTodoSortable === 'function') initTodoSortable();
+      if(typeof updateTodoStats === 'function') updateTodoStats();
+      if(note) note.innerHTML = `<i class="fa-solid fa-database"></i> ${window.isCurrentAdminV15() ? 'Admin: all TODO loaded' : 'Your TODO loaded'} from Supabase (${window.todos.length} cards).`;
+      if(typeof renderDashboardTodos === 'function') renderDashboardTodos();
+      if(typeof renderNotifications === 'function') renderNotifications();
+      if(typeof hideResetDemoButton === 'function') hideResetDemoButton();
+    }catch(err){
+      console.error('Supabase user TODO Load Error:', err);
+      window.todos = [];
+      const msg = err?.message || 'Supabase TODO fetch failed.';
+      if(typeof renderTodos === 'function') renderTodos(msg + ' Check todos.user_id column and RLS policy.');
+      if(typeof updateTodoStats === 'function') updateTodoStats();
+      if(note) note.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Supabase TODO fetch failed: ${String(msg).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}`;
+      if(typeof toast === 'function') toast('❌','Supabase TODO fetch failed.','var(--red)');
     }
   };
 
-  document.addEventListener("DOMContentLoaded", function(){
-    ensureUsernameFieldV14();
-    ensureSidebarRoleV14();
-    window.setAuthModeV1(authModeV1 || "login");
+  window.saveTodo = async function(){
+    const client = initSupabaseClient();
+    const user = getActiveUser();
+    if(!client || !user){ toast('⚠️','Login required to save TODO.','var(--orange)'); return; }
+    const title = el('todoTitle')?.value.trim() || '';
+    const desc = el('todoDesc')?.value.trim() || '';
+    const date = formatDateOnly(el('todoDate')?.value || '');
+    const time = el('todoTime')?.value || '09:00';
+    const reminderType = el('todoReminderType')?.value || 'Mail';
+    const priority = el('todoPriority')?.value || 'Medium';
+    if(!title){ toast('⚠️','Please enter TODO title.','var(--orange)'); return; }
+    try{
+      const nextPosition = window.todos?.length ? Math.max(...window.todos.map(t=>Number(t.position || 0))) + 1 : 1;
+      const payload = { title, description:desc, priority, status:'Pending', deadline_date:date || null, reminder_time:time, reminder_type:reminderType, position:nextPosition, user_id:user.id };
+      const { error } = await client.from('todos').insert([payload]);
+      if(error) throw error;
+      if(typeof closeTodoModal === 'function') closeTodoModal();
+      await loadTodos();
+      toast('✅','TODO saved.','var(--green)');
+      if(typeof addActivity === 'function') addActivity('todo','TODO created',title);
+      if(typeof renderNotifications === 'function') renderNotifications();
+    }catch(err){
+      console.error('Supabase user TODO Save Error:', err);
+      toast('❌', err.message || 'Failed to save TODO.', 'var(--red)');
+    }
+  };
+
+  const oldUpdateTodo = window.updateTodo;
+  window.updateTodo = async function(id){
+    const client = initSupabaseClient(); const user = getActiveUser();
+    if(!client || !user){ toast('⚠️','Login required.','var(--orange)'); return; }
+    const title = el('todoTitle')?.value.trim() || '';
+    if(!title){ toast('⚠️','Please enter TODO title.','var(--orange)'); return; }
+    try{
+      let q = client.from('todos').update({
+        title,
+        description: el('todoDesc')?.value.trim() || '',
+        deadline_date: formatDateOnly(el('todoDate')?.value || '') || null,
+        reminder_time: el('todoTime')?.value || '09:00',
+        reminder_type: el('todoReminderType')?.value || 'Mail',
+        priority: el('todoPriority')?.value || 'Medium',
+        updated_at: new Date().toISOString()
+      }).eq('id', id);
+      const { error } = await scopeMutationForCurrentUser(q);
+      if(error) throw error;
+      if(typeof closeTodoModal === 'function') closeTodoModal();
+      if(typeof resetTodoSaveButton === 'function') resetTodoSaveButton();
+      await loadTodos();
+      toast('✅','TODO updated.','var(--green)');
+    }catch(err){ console.error('Supabase user TODO Update Error:', err); toast('❌', err.message || 'Failed to update TODO.', 'var(--red)'); }
+  };
+
+  window.toggleTodoDone = async function(id){
+    const client = initSupabaseClient(); const user = getActiveUser();
+    if(!client || !user){ toast('⚠️','Login required.','var(--orange)'); return; }
+    const todo = (window.todos || []).find(t=>String(t.id) === String(id)); if(!todo) return;
+    const newStatus = todo.status === 'Completed' ? 'Pending' : 'Completed';
+    try{
+      let q = client.from('todos').update({ status:newStatus, updated_at:new Date().toISOString() }).eq('id', id);
+      const { error } = await scopeMutationForCurrentUser(q);
+      if(error) throw error;
+      await loadTodos();
+      if(typeof renderNotifications === 'function') renderNotifications();
+    }catch(err){ console.error('Supabase user TODO Status Error:', err); toast('❌', err.message || 'Failed to update TODO status.', 'var(--red)'); }
+  };
+
+  window.deleteTodo = async function(id){
+    if(typeof requireAdmin === 'function' && !requireAdmin()) return;
+    const client = initSupabaseClient(); const user = getActiveUser();
+    if(!client || !user){ toast('⚠️','Login required.','var(--orange)'); return; }
+    const todo = (window.todos || []).find(t=>String(t.id) === String(id));
+    try{
+      let q = client.from('todos').delete().eq('id', id);
+      const { error } = await scopeMutationForCurrentUser(q);
+      if(error) throw error;
+      await loadTodos();
+      toast('🗑️','TODO deleted.','var(--red)');
+      if(typeof addActivity === 'function') addActivity('todo','TODO deleted', todo ? todo.title : String(id));
+    }catch(err){ console.error('Supabase user TODO Delete Error:', err); toast('❌', err.message || 'Failed to delete TODO.', 'var(--red)'); }
+  };
+
+  // Save reorder safely for current visible scope only.
+  const oldInitSortable = window.initTodoSortable;
+  window.initTodoSortable = function(){
+    if(typeof oldInitSortable === 'function') oldInitSortable();
+    const list = el('todoList');
+    if(!list || typeof Sortable === 'undefined') return;
+    if(window.todoSortable && window.todoSortable.option){
+      window.todoSortable.option('onEnd', async function(){
+        const client = initSupabaseClient(); const user = getActiveUser();
+        if(!client || !user) return;
+        const orderedIds = Array.from(list.querySelectorAll('.priority-todo-card')).map(x=>String(x.dataset.id));
+        try{
+          for(let i=0;i<orderedIds.length;i++){
+            let q = client.from('todos').update({ position:i+1, updated_at:new Date().toISOString() }).eq('id', orderedIds[i]);
+            const { error } = await scopeMutationForCurrentUser(q);
+            if(error) throw error;
+          }
+          await loadTodos();
+          toast('↕️','TODO order saved.','var(--accent)');
+        }catch(err){ console.error('Supabase user TODO Reorder Error:', err); toast('❌', err.message || 'Failed to save TODO order.', 'var(--red)'); }
+      });
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    ensureSettingsCloseButton();
+    ensureUsernameField();
+    if(typeof window.setAuthModeV1 === 'function') window.setAuthModeV1(window.authModeV1 || 'login');
   });
 })();
 </script>
 
 </body>
 </html>
+
+<!-- V16 PATCH: profiles table error safe fallback (no preview/no existing code change) -->
+<script id="v16-profiles-safe-fallback">
+(function(){
+  'use strict';
+
+  // Keep false until you create public.profiles table in Supabase.
+  // Username is still saved inside Supabase Auth user_metadata, so login/profile works without console 404.
+  window.ENABLE_PUBLIC_PROFILES_TABLE = window.ENABLE_PUBLIC_PROFILES_TABLE || false;
+
+  const ADMIN_EMAILS_V16 = window.ADMIN_EMAILS || ["admin@zsystem.in"];
+  function el(id){ return document.getElementById(id); }
+  function safeLower(v){ return String(v || '').trim().toLowerCase(); }
+  function isAdminEmail(email){ return (ADMIN_EMAILS_V16 || []).map(safeLower).includes(safeLower(email)); }
+  function authNameFromUser(user){
+    const meta = user?.user_metadata || {};
+    return (meta.username || meta.full_name || meta.name || (user?.email || 'User').split('@')[0].replace(/[._-]+/g,' ')).trim().toUpperCase() || 'USER';
+  }
+  function authInitials(name, email){
+    const initials = String(name || '').split(/\s+/).filter(Boolean).map(x=>x[0]).join('').slice(0,2);
+    return (initials || String(email || 'US').slice(0,2)).toUpperCase();
+  }
+
+  window.updateSidebarUserV13 = async function(user){
+    const email = user?.email || 'User';
+    const name = authNameFromUser(user);
+    const av = el('sidebarProfileAvatarV13');
+    const nm = el('sidebarProfileNameV13');
+    const em = el('sidebarProfileEmailV13');
+    if(av) av.textContent = authInitials(name, email);
+    if(nm) nm.textContent = name;
+    if(em) em.textContent = email;
+  };
+
+  window.applyRoleByUserV15 = function(user){
+    const admin = !!user && isAdminEmail(user.email);
+    document.body.classList.toggle('admin-mode', admin);
+    try { localStorage.setItem('opsAdminModeV1', admin ? 'true' : 'false'); } catch(e) {}
+    const roleChip = document.getElementById('roleChip') || document.querySelector('.role-chip');
+    if(roleChip) roleChip.textContent = admin ? 'Admin' : 'Viewer';
+    const modePill = el('settingsModePill');
+    if(modePill){
+      const span = modePill.querySelector('span');
+      if(span) span.textContent = admin ? 'Admin Mode' : 'Viewer Mode';
+    }
+  };
+
+  async function optionalSaveProfileToPublicTable(user, username){
+    if(!window.ENABLE_PUBLIC_PROFILES_TABLE) return;
+    const client = typeof initSupabaseClient === 'function' ? initSupabaseClient() : null;
+    if(!client || !user?.id) return;
+    try{
+      const { error } = await client.from('profiles').upsert({
+        id: user.id,
+        username: username || authNameFromUser(user),
+        email: user.email,
+        role: isAdminEmail(user.email) ? 'admin' : 'viewer',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+      if(error) throw error;
+    }catch(err){
+      console.warn('Optional profiles table save skipped:', err?.message || err);
+    }
+  }
+
+  window.submitAuthV1 = async function(){
+    const client = typeof getAuthClientV1 === 'function' ? getAuthClientV1() : (typeof initSupabaseClient === 'function' ? initSupabaseClient() : null);
+    if(!client) return;
+
+    const email = (el('authEmail')?.value || '').trim();
+    const password = el('authPassword')?.value || '';
+    const username = (el('authUsername')?.value || '').trim();
+    const btn = el('authSubmitBtn');
+    const mode = window.authModeV1 === 'signup' ? 'signup' : 'login';
+
+    if(!email || !password){ setAuthMessageV1('Email and password required.', 'err'); return; }
+    if(password.length < 6){ setAuthMessageV1('Password must be at least 6 characters.', 'err'); return; }
+    if(mode === 'signup' && !username){ setAuthMessageV1('Username required for signup.', 'err'); return; }
+
+    try{
+      if(btn) btn.disabled = true;
+      if(typeof showOpsPreloaderV13 === 'function') showOpsPreloaderV13(mode === 'login' ? 'Logging in...' : 'Creating account...');
+      setAuthMessageV1(mode === 'login' ? 'Logging in...' : 'Creating account...', '');
+
+      const res = mode === 'login'
+        ? await client.auth.signInWithPassword({ email, password })
+        : await client.auth.signUp({
+            email,
+            password,
+            options: { data: { username, full_name: username, name: username, role: isAdminEmail(email) ? 'admin' : 'viewer' } }
+          });
+
+      if(res.error) throw res.error;
+
+      if(mode === 'signup' && res.data?.user){
+        await optionalSaveProfileToPublicTable(res.data.user, username);
+      }
+
+      if(mode === 'signup' && !res.data?.session){
+        setAuthMessageV1('Account created. Login now.', 'ok');
+        if(typeof window.setAuthModeV1 === 'function') window.setAuthModeV1('login');
+        return;
+      }
+
+      if(typeof applyAuthSessionV1 === 'function') await applyAuthSessionV1(res.data?.session || null);
+      setAuthMessageV1('Login successful.', 'ok');
+    }catch(err){
+      console.error('Auth error:', err);
+      setAuthMessageV1(err?.message || 'Authentication failed.', 'err');
+    }finally{
+      if(btn) btn.disabled = false;
+      if(typeof hideOpsPreloaderV13 === 'function') setTimeout(hideOpsPreloaderV13, 350);
+    }
+  };
+})();
+</script>
+
+<!-- V17 PATCH: strict user-wise TODO separation + instant render after CRUD -->
+<style id="v17-user-crud-style">
+  /* Every logged-in user can CRUD only their own TODO cards. */
+  body .todo-admin-only{display:flex!important;}
+  body:not(.admin-mode) .todo-admin-only{display:flex!important;}
+</style>
+<script id="v17-user-scoped-todos-crud-fixed">
+(function(){
+  'use strict';
+
+  function v17El(id){ return document.getElementById(id); }
+  function v17User(){
+    if (typeof getActiveUser === 'function') return getActiveUser();
+    return window.currentUser || window.opsCurrentUser || null;
+  }
+  function v17Escape(v){
+    return String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function v17Date(v){
+    if (typeof formatDateOnly === 'function') return formatDateOnly(v || '');
+    return v || '';
+  }
+  function v17RefreshUI(message){
+    if (typeof renderTodos === 'function') renderTodos(message);
+    if (typeof initTodoSortable === 'function') initTodoSortable();
+    if (typeof updateTodoStats === 'function') updateTodoStats();
+    if (typeof renderDashboardTodos === 'function') renderDashboardTodos();
+    if (typeof renderNotifications === 'function') renderNotifications();
+    const note = v17El('todoDbNoteSupabase');
+    if (note && !message) note.innerHTML = `<i class="fa-solid fa-database"></i> Your TODO loaded from Supabase (${(window.todos || []).length} cards).`;
+  }
+  function v17ScopedSelect(client, user){
+    return client.from('todos').select('*').eq('user_id', user.id);
+  }
+  function v17ScopedUpdate(client, user, id, payload){
+    return client.from('todos').update(payload).eq('id', id).eq('user_id', user.id).select('*').single();
+  }
+  function v17ScopedDelete(client, user, id){
+    return client.from('todos').delete().eq('id', id).eq('user_id', user.id);
+  }
+  function v17Normalize(raw){
+    return typeof normalizeTodo === 'function' ? normalizeTodo(raw) : raw;
+  }
+  function v17SortTodos(){
+    window.todos = (window.todos || []).sort((a,b)=>{
+      const pa = Number(a.position || 9999), pb = Number(b.position || 9999);
+      if (pa !== pb) return pa - pb;
+      return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+    });
+  }
+
+  // IMPORTANT: Admin and Viewer both see only their own TODO.
+  // Admin role controls UI/settings permissions only; it does NOT read other users' TODO.
+  window.loadTodos = async function(){
+    const client = typeof initSupabaseClient === 'function' ? initSupabaseClient() : null;
+    const user = v17User();
+    const note = v17El('todoDbNoteSupabase');
+
+    if (!client || !user) {
+      window.todos = [];
+      v17RefreshUI('Please login to load your TODO list.');
+      if (note) note.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Login required for TODO.';
+      return;
+    }
+
+    try{
+      if (note) note.innerHTML = '<i class="fa-solid fa-database"></i> Loading your TODO data from Supabase...';
+
+      let res = await v17ScopedSelect(client, user)
+        .order('position', { ascending:true, nullsFirst:false })
+        .order('created_at', { ascending:false });
+
+      if (res.error) {
+        console.warn('User TODO sorted fetch failed. Retrying plain select:', res.error.message);
+        res = await v17ScopedSelect(client, user);
+      }
+      if (res.error) throw res.error;
+
+      window.todos = (res.data || []).map(v17Normalize);
+      v17SortTodos();
+      v17RefreshUI();
+    }catch(err){
+      console.error('User scoped TODO load failed:', err);
+      window.todos = [];
+      const msg = err?.message || 'TODO fetch failed.';
+      v17RefreshUI(msg + ' Check todos.user_id column / policies.');
+      if (note) note.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> TODO fetch failed: ${v17Escape(msg)}`;
+      if (typeof toast === 'function') toast('❌','TODO fetch failed.','var(--red)');
+    }
+  };
+
+  window.saveTodo = async function(){
+    const client = typeof initSupabaseClient === 'function' ? initSupabaseClient() : null;
+    const user = v17User();
+    if (!client || !user) { if (typeof toast === 'function') toast('⚠️','Login required to save TODO.','var(--orange)'); return; }
+
+    const title = (v17El('todoTitle')?.value || '').trim();
+    const desc = (v17El('todoDesc')?.value || '').trim();
+    const date = v17Date(v17El('todoDate')?.value || '');
+    const time = v17El('todoTime')?.value || '09:00';
+    const reminderType = v17El('todoReminderType')?.value || 'Mail';
+    const priority = v17El('todoPriority')?.value || 'Medium';
+
+    if (!title) { if (typeof toast === 'function') toast('⚠️','Please enter TODO title.','var(--orange)'); return; }
+
+    try{
+      const nextPosition = (window.todos || []).length ? Math.max(...(window.todos || []).map(t=>Number(t.position || 0))) + 1 : 1;
+      const payload = {
+        title,
+        description: desc,
+        priority,
+        status: 'Pending',
+        deadline_date: date || null,
+        reminder_time: time,
+        reminder_type: reminderType,
+        position: nextPosition,
+        user_id: user.id
+      };
+
+      const { data, error } = await client.from('todos').insert([payload]).select('*').single();
+      if (error) throw error;
+
+      const newTodo = v17Normalize(data || payload);
+      window.todos = [...(window.todos || []), newTodo];
+      v17SortTodos();
+
+      if (typeof closeTodoModal === 'function') closeTodoModal();
+      if (typeof resetTodoSaveButton === 'function') resetTodoSaveButton();
+      v17RefreshUI();
+      if (typeof toast === 'function') toast('✅','TODO saved.','var(--green)');
+      if (typeof addActivity === 'function') addActivity('todo','TODO created',title);
+
+      // Background re-sync to keep DB/UI exact, without waiting for full reload.
+      setTimeout(()=>{ if(typeof window.loadTodos === 'function') window.loadTodos(); }, 400);
+    }catch(err){
+      console.error('User scoped TODO save failed:', err);
+      if (typeof toast === 'function') toast('❌', err?.message || 'Failed to save TODO.', 'var(--red)');
+    }
+  };
+
+  window.updateTodo = async function(id){
+    const client = typeof initSupabaseClient === 'function' ? initSupabaseClient() : null;
+    const user = v17User();
+    if (!client || !user) { if (typeof toast === 'function') toast('⚠️','Login required.','var(--orange)'); return; }
+
+    const title = (v17El('todoTitle')?.value || '').trim();
+    if (!title) { if (typeof toast === 'function') toast('⚠️','Please enter TODO title.','var(--orange)'); return; }
+
+    try{
+      const payload = {
+        title,
+        description: (v17El('todoDesc')?.value || '').trim(),
+        deadline_date: v17Date(v17El('todoDate')?.value || '') || null,
+        reminder_time: v17El('todoTime')?.value || '09:00',
+        reminder_type: v17El('todoReminderType')?.value || 'Mail',
+        priority: v17El('todoPriority')?.value || 'Medium',
+        updated_at: new Date().toISOString()
+      };
+      const { data, error } = await v17ScopedUpdate(client, user, id, payload);
+      if (error) throw error;
+
+      window.todos = (window.todos || []).map(t => String(t.id) === String(id) ? v17Normalize(data || {...t, ...payload}) : t);
+      v17SortTodos();
+      if (typeof closeTodoModal === 'function') closeTodoModal();
+      if (typeof resetTodoSaveButton === 'function') resetTodoSaveButton();
+      v17RefreshUI();
+      if (typeof toast === 'function') toast('✅','TODO updated.','var(--green)');
+      setTimeout(()=>{ if(typeof window.loadTodos === 'function') window.loadTodos(); }, 400);
+    }catch(err){
+      console.error('User scoped TODO update failed:', err);
+      if (typeof toast === 'function') toast('❌', err?.message || 'Failed to update TODO.', 'var(--red)');
+    }
+  };
+
+  window.toggleTodoDone = async function(id){
+    const client = typeof initSupabaseClient === 'function' ? initSupabaseClient() : null;
+    const user = v17User();
+    if (!client || !user) { if (typeof toast === 'function') toast('⚠️','Login required.','var(--orange)'); return; }
+    const todo = (window.todos || []).find(t => String(t.id) === String(id));
+    if (!todo) return;
+
+    const newStatus = todo.status === 'Completed' ? 'Pending' : 'Completed';
+    try{
+      const { data, error } = await v17ScopedUpdate(client, user, id, { status:newStatus, updated_at:new Date().toISOString() });
+      if (error) throw error;
+      window.todos = (window.todos || []).map(t => String(t.id) === String(id) ? v17Normalize(data || {...t, status:newStatus}) : t);
+      v17RefreshUI();
+    }catch(err){
+      console.error('User scoped TODO status failed:', err);
+      if (typeof toast === 'function') toast('❌', err?.message || 'Failed to update TODO status.', 'var(--red)');
+    }
+  };
+
+  window.deleteTodo = async function(id){
+    const client = typeof initSupabaseClient === 'function' ? initSupabaseClient() : null;
+    const user = v17User();
+    if (!client || !user) { if (typeof toast === 'function') toast('⚠️','Login required.','var(--orange)'); return; }
+
+    try{
+      const { error } = await v17ScopedDelete(client, user, id);
+      if (error) throw error;
+      window.todos = (window.todos || []).filter(t => String(t.id) !== String(id));
+      if (typeof closeTodoViewModal === 'function') closeTodoViewModal();
+      v17RefreshUI();
+      if (typeof toast === 'function') toast('🗑️','TODO deleted.','var(--red)');
+    }catch(err){
+      console.error('User scoped TODO delete failed:', err);
+      if (typeof toast === 'function') toast('❌', err?.message || 'Failed to delete TODO.', 'var(--red)');
+    }
+  };
+
+  // User-scoped drag order save.
+  const oldInitTodoSortableV17 = window.initTodoSortable;
+  window.initTodoSortable = function(){
+    if (typeof oldInitTodoSortableV17 === 'function') oldInitTodoSortableV17();
+    const list = v17El('todoList');
+    if (!list || !window.todoSortable || !window.todoSortable.option) return;
+    window.todoSortable.option('onEnd', async function(){
+      const client = typeof initSupabaseClient === 'function' ? initSupabaseClient() : null;
+      const user = v17User();
+      if (!client || !user) return;
+      const orderedIds = Array.from(list.querySelectorAll('.priority-todo-card')).map(x=>String(x.dataset.id));
+      try{
+        for (let i=0; i<orderedIds.length; i++) {
+          const id = orderedIds[i];
+          const { error } = await client.from('todos')
+            .update({ position:i+1, updated_at:new Date().toISOString() })
+            .eq('id', id)
+            .eq('user_id', user.id);
+          if (error) throw error;
+        }
+        (window.todos || []).forEach(t => {
+          const idx = orderedIds.indexOf(String(t.id));
+          if (idx >= 0) t.position = idx + 1;
+        });
+        v17SortTodos();
+        v17RefreshUI();
+        if (typeof toast === 'function') toast('↕️','TODO order saved.','var(--accent)');
+      }catch(err){
+        console.error('User scoped TODO reorder failed:', err);
+        if (typeof toast === 'function') toast('❌', err?.message || 'Failed to save TODO order.', 'var(--red)');
+      }
+    });
+  };
+
+  // Re-render after auth/session is ready so counts match current user on Dashboard + TODO manager.
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(()=>{ if (v17User() && typeof window.loadTodos === 'function') window.loadTodos(); }, 900);
+  });
+})();
+</script>
+
+<!-- V18 PATCH: frontend session-safe user CRUD + settings close alignment -->
+<style id="v18-user-crud-settings-fix">
+  /* Viewer and Admin can CRUD their own TODO cards */
+  body .todo-admin-only,
+  body:not(.admin-mode) .todo-admin-only{
+    display:flex!important;
+  }
+
+  /* Settings close button proper top-right alignment */
+  #tab-settings .settings-hero-clean{
+    position:relative!important;
+    padding-right:72px!important;
+  }
+  #tab-settings .settings-hero-actions-v15,
+  #tab-settings .settings-hero-actions-v18{
+    position:absolute!important;
+    top:24px!important;
+    right:24px!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:10px!important;
+  }
+  #settingsCloseBtnV15,
+  #settingsCloseBtnV18{
+    width:40px!important;
+    height:40px!important;
+    border-radius:14px!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    flex-shrink:0!important;
+  }
+  @media(max-width:768px){
+    #tab-settings .settings-hero-clean{
+      padding-right:56px!important;
+    }
+    #tab-settings .settings-hero-actions-v15,
+    #tab-settings .settings-hero-actions-v18{
+      top:18px!important;
+      right:18px!important;
+    }
+    #settingsModePill{display:none!important;}
+    .sidebar-footer{display:none!important;}
+    .sidebar{overflow-y:auto!important;}
+  }
+</style>
+<script id="v18-session-safe-user-crud-patch">
+(function(){
+  'use strict';
+
+  function v18El(id){ return document.getElementById(id); }
+  function v18Client(){ return typeof initSupabaseClient === 'function' ? initSupabaseClient() : null; }
+  function v18Escape(v){ return String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  function v18Date(v){ return typeof formatDateOnly === 'function' ? formatDateOnly(v || '') : (v || ''); }
+  function v18Normalize(raw){ return typeof normalizeTodo === 'function' ? normalizeTodo(raw) : raw; }
+  function v18Sort(){
+    window.todos = (window.todos || []).sort((a,b)=>{
+      const pa = Number(a.position || 9999), pb = Number(b.position || 9999);
+      if(pa !== pb) return pa - pb;
+      return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+    });
+  }
+  function v18Refresh(msg){
+    if(typeof renderTodos === 'function') renderTodos(msg);
+    if(typeof initTodoSortable === 'function') initTodoSortable();
+    if(typeof updateTodoStats === 'function') updateTodoStats();
+    if(typeof renderDashboardTodos === 'function') renderDashboardTodos();
+    if(typeof renderNotifications === 'function') renderNotifications();
+    const note = v18El('todoDbNoteSupabase');
+    if(note && !msg) note.innerHTML = `<i class="fa-solid fa-database"></i> Your TODO loaded from Supabase (${(window.todos || []).length} cards).`;
+  }
+
+  async function v18User(){
+    if(window.currentUserV1) return window.currentUserV1;
+    if(window.opsCurrentUser) return window.opsCurrentUser;
+    const client = v18Client();
+    if(!client || !client.auth) return null;
+    try{
+      const { data, error } = await client.auth.getUser();
+      if(error) return null;
+      const user = data?.user || null;
+      if(user){
+        window.currentUserV1 = user;
+        window.opsCurrentUser = user;
+      }
+      return user;
+    }catch(e){
+      return null;
+    }
+  }
+  window.getActiveUserV18 = v18User;
+
+  async function v18LoadCurrentUserTodos(){
+    const client = v18Client();
+    const user = await v18User();
+    const note = v18El('todoDbNoteSupabase');
+    if(!client || !user){
+      window.todos = [];
+      v18Refresh('Please login to load your TODO list.');
+      if(note) note.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Login required for TODO.';
+      return;
+    }
+    try{
+      if(note) note.innerHTML = '<i class="fa-solid fa-database"></i> Loading your TODO data from Supabase...';
+      let res = await client.from('todos')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('position', { ascending:true, nullsFirst:false })
+        .order('created_at', { ascending:false });
+      if(res.error){
+        console.warn('TODO sorted fetch failed. Retrying plain user select:', res.error.message);
+        res = await client.from('todos').select('*').eq('user_id', user.id);
+      }
+      if(res.error) throw res.error;
+      window.todos = (res.data || []).map(v18Normalize);
+      v18Sort();
+      v18Refresh();
+    }catch(err){
+      console.error('User TODO load failed:', err);
+      window.todos = [];
+      const msg = err?.message || 'TODO fetch failed.';
+      v18Refresh(msg + ' Check todos.user_id column and RLS policies.');
+      if(note) note.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> TODO fetch failed: ${v18Escape(msg)}`;
+      if(typeof toast === 'function') toast('❌','TODO fetch failed.','var(--red)');
+    }
+  }
+  window.loadTodos = v18LoadCurrentUserTodos;
+
+  window.saveTodo = async function(){
+    const client = v18Client();
+    const user = await v18User();
+    if(!client || !user){ if(typeof toast === 'function') toast('⚠️','Login required to save TODO. Please logout/login once.','var(--orange)'); return; }
+
+    const title = (v18El('todoTitle')?.value || '').trim();
+    const desc = (v18El('todoDesc')?.value || '').trim();
+    const date = v18Date(v18El('todoDate')?.value || '');
+    const time = v18El('todoTime')?.value || '09:00';
+    const reminderType = v18El('todoReminderType')?.value || 'Mail';
+    const priority = v18El('todoPriority')?.value || 'Medium';
+    if(!title){ if(typeof toast === 'function') toast('⚠️','Please enter TODO title.','var(--orange)'); return; }
+
+    try{
+      const nextPosition = (window.todos || []).length ? Math.max(...(window.todos || []).map(t=>Number(t.position || 0))) + 1 : 1;
+      const payload = {
+        title,
+        description:desc,
+        priority,
+        status:'Pending',
+        deadline_date:date || null,
+        reminder_time:time,
+        reminder_type:reminderType,
+        position:nextPosition,
+        user_id:user.id,
+        updated_at:new Date().toISOString()
+      };
+      const { data, error } = await client.from('todos').insert([payload]).select('*').single();
+      if(error) throw error;
+      window.todos = [...(window.todos || []), v18Normalize(data || payload)];
+      v18Sort();
+      if(typeof closeTodoModal === 'function') closeTodoModal();
+      if(typeof resetTodoSaveButton === 'function') resetTodoSaveButton();
+      v18Refresh();
+      if(typeof toast === 'function') toast('✅','TODO saved.','var(--green)');
+      if(typeof addActivity === 'function') addActivity('todo','TODO created',title);
+      setTimeout(v18LoadCurrentUserTodos, 500);
+    }catch(err){
+      console.error('User TODO save failed:', err);
+      if(typeof toast === 'function') toast('❌', err?.message || 'Failed to save TODO.', 'var(--red)');
+    }
+  };
+
+  // Viewer can edit own TODO too. Admin role does not control TODO CRUD.
+  window.editTodo = function(id){
+    const todo = (window.todos || []).find(t => String(t.id) === String(id));
+    if(!todo) return;
+    if(v18El('todoTitle')) v18El('todoTitle').value = todo.title || '';
+    if(v18El('todoDesc')) v18El('todoDesc').value = todo.desc || '';
+    if(typeof setTodoDateValue === 'function') setTodoDateValue(todo.date || ''); else if(v18El('todoDate')) v18El('todoDate').value = todo.date || '';
+    if(typeof setTodoTimeValue === 'function') setTodoTimeValue(todo.time || '09:00'); else if(v18El('todoTime')) v18El('todoTime').value = todo.time || '09:00';
+    if(typeof setCustomDropdownValue === 'function'){
+      setCustomDropdownValue('todoReminderType', todo.reminderType || 'Mail', todo.reminderType || 'Mail');
+      setCustomDropdownValue('todoPriority', todo.priority || 'Medium', todo.priority || 'Medium');
+    }else{
+      if(v18El('todoReminderType')) v18El('todoReminderType').value = todo.reminderType || 'Mail';
+      if(v18El('todoPriority')) v18El('todoPriority').value = todo.priority || 'Medium';
+    }
+    v18El('todoOverlay')?.classList.add('open');
+    const saveBtn = document.querySelector('#todoOverlay .btn.btn-primary');
+    if(saveBtn){
+      saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Update TODO';
+      saveBtn.onclick = function(){ window.updateTodo(id); };
+    }
+  };
+
+  window.updateTodo = async function(id){
+    const client = v18Client();
+    const user = await v18User();
+    if(!client || !user){ if(typeof toast === 'function') toast('⚠️','Login required. Please logout/login once.','var(--orange)'); return; }
+    const title = (v18El('todoTitle')?.value || '').trim();
+    if(!title){ if(typeof toast === 'function') toast('⚠️','Please enter TODO title.','var(--orange)'); return; }
+    try{
+      const payload = {
+        title,
+        description:(v18El('todoDesc')?.value || '').trim(),
+        deadline_date:v18Date(v18El('todoDate')?.value || '') || null,
+        reminder_time:v18El('todoTime')?.value || '09:00',
+        reminder_type:v18El('todoReminderType')?.value || 'Mail',
+        priority:v18El('todoPriority')?.value || 'Medium',
+        updated_at:new Date().toISOString()
+      };
+      const { data, error } = await client.from('todos').update(payload).eq('id', id).eq('user_id', user.id).select('*').single();
+      if(error) throw error;
+      window.todos = (window.todos || []).map(t => String(t.id) === String(id) ? v18Normalize(data || {...t, ...payload}) : t);
+      v18Sort();
+      if(typeof closeTodoModal === 'function') closeTodoModal();
+      if(typeof resetTodoSaveButton === 'function') resetTodoSaveButton();
+      v18Refresh();
+      if(typeof toast === 'function') toast('✅','TODO updated.','var(--green)');
+      setTimeout(v18LoadCurrentUserTodos, 500);
+    }catch(err){
+      console.error('User TODO update failed:', err);
+      if(typeof toast === 'function') toast('❌', err?.message || 'Failed to update TODO.', 'var(--red)');
+    }
+  };
+
+  window.toggleTodoDone = async function(id){
+    const client = v18Client();
+    const user = await v18User();
+    if(!client || !user){ if(typeof toast === 'function') toast('⚠️','Login required. Please logout/login once.','var(--orange)'); return; }
+    const todo = (window.todos || []).find(t => String(t.id) === String(id));
+    if(!todo) return;
+    const newStatus = todo.status === 'Completed' ? 'Pending' : 'Completed';
+    try{
+      const { data, error } = await client.from('todos').update({status:newStatus, updated_at:new Date().toISOString()}).eq('id', id).eq('user_id', user.id).select('*').single();
+      if(error) throw error;
+      window.todos = (window.todos || []).map(t => String(t.id) === String(id) ? v18Normalize(data || {...t, status:newStatus}) : t);
+      v18Refresh();
+      if(typeof toast === 'function') toast('✅','TODO status updated.','var(--green)');
+    }catch(err){
+      console.error('User TODO status failed:', err);
+      if(typeof toast === 'function') toast('❌', err?.message || 'Failed to update TODO status.', 'var(--red)');
+    }
+  };
+
+  window.deleteTodo = async function(id){
+    const client = v18Client();
+    const user = await v18User();
+    if(!client || !user){ if(typeof toast === 'function') toast('⚠️','Login required. Please logout/login once.','var(--orange)'); return; }
+    try{
+      const { error } = await client.from('todos').delete().eq('id', id).eq('user_id', user.id);
+      if(error) throw error;
+      window.todos = (window.todos || []).filter(t => String(t.id) !== String(id));
+      if(typeof closeTodoViewModal === 'function') closeTodoViewModal();
+      v18Refresh();
+      if(typeof toast === 'function') toast('🗑️','TODO deleted.','var(--red)');
+    }catch(err){
+      console.error('User TODO delete failed:', err);
+      if(typeof toast === 'function') toast('❌', err?.message || 'Failed to delete TODO.', 'var(--red)');
+    }
+  };
+
+  // Settings close button alignment: move/create close button into absolute top-right.
+  function v18FixSettingsClose(){
+    const hero = document.querySelector('#tab-settings .settings-hero-clean');
+    if(!hero) return;
+    let actions = hero.querySelector('.settings-hero-actions-v18') || hero.querySelector('.settings-hero-actions-v15');
+    if(!actions){
+      actions = document.createElement('div');
+      actions.className = 'settings-hero-actions-v18';
+      hero.appendChild(actions);
+    }
+    let btn = document.getElementById('settingsCloseBtnV15') || document.getElementById('settingsCloseBtnV18');
+    if(!btn){
+      btn = document.createElement('button');
+      btn.id = 'settingsCloseBtnV18';
+      btn.className = 'settings-overlay-close-btn-v15';
+      btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    }
+    btn.type = 'button';
+    btn.title = 'Close Settings';
+    btn.onclick = function(){
+      if(typeof switchTab === 'function') switchTab('dashboard', document.querySelector('.nav-item'));
+    };
+    actions.appendChild(btn);
+  }
+
+  // On auth/session ready, reload only current user's TODO so sidebar/dashboard counts are user-wise.
+  document.addEventListener('DOMContentLoaded', function(){
+    v18FixSettingsClose();
+    setTimeout(v18LoadCurrentUserTodos, 1200);
+    setTimeout(v18FixSettingsClose, 1600);
+  });
+})();
+</script>
+
+
+
+<!-- V19 PATCH: strict current-user TODO isolation for Admin + Viewer -->
+<script id="v19-strict-user-scoped-todos-patch">
+(function(){
+  'use strict';
+
+  function v19Client(){
+    return typeof initSupabaseClient === 'function' ? initSupabaseClient() : null;
+  }
+  function v19El(id){ return document.getElementById(id); }
+  function v19Escape(v){
+    return String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function v19Normalize(raw){
+    return typeof normalizeTodo === 'function' ? normalizeTodo(raw) : raw;
+  }
+  function v19Date(v){
+    return typeof formatDateOnly === 'function' ? formatDateOnly(v || '') : (v || '');
+  }
+
+  async function v19User(){
+    const client = v19Client();
+    if(client && client.auth){
+      try{
+        const { data, error } = await client.auth.getUser();
+        if(!error && data && data.user){
+          window.currentUserV1 = data.user;
+          window.opsCurrentUser = data.user;
+          return data.user;
+        }
+      }catch(e){}
+    }
+    return window.currentUserV1 || window.opsCurrentUser || null;
+  }
+  function v19CachedUser(){
+    return window.currentUserV1 || window.opsCurrentUser || null;
+  }
+  function v19Sort(){
+    window.todos = (window.todos || []).sort((a,b)=>{
+      const pa = Number(a.position || 9999), pb = Number(b.position || 9999);
+      if(pa !== pb) return pa - pb;
+      return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+    });
+  }
+  function v19FilterCacheToUser(){
+    const user = v19CachedUser();
+    if(!user || !user.id) return;
+    window.todos = (window.todos || []).filter(t => {
+      const rawUserId = t.user_id || t.userId || t.owner_id || t.ownerId || '';
+      return !rawUserId || String(rawUserId) === String(user.id);
+    });
+  }
+  function v19Refresh(message){
+    v19FilterCacheToUser();
+    if(typeof renderTodos === 'function') renderTodos(message);
+    if(typeof initTodoSortable === 'function') initTodoSortable();
+    if(typeof updateTodoStats === 'function') updateTodoStats();
+    if(typeof renderDashboardTodos === 'function') renderDashboardTodos();
+    if(typeof renderNotifications === 'function') renderNotifications();
+    const note = v19El('todoDbNoteSupabase');
+    if(note && !message){
+      note.innerHTML = `<i class="fa-solid fa-database"></i> Your TODO loaded from Supabase (${(window.todos || []).length} cards).`;
+    }
+  }
+
+  async function v19LoadTodos(){
+    const client = v19Client();
+    const user = await v19User();
+    const note = v19El('todoDbNoteSupabase');
+
+    if(!client || !user || !user.id){
+      window.todos = [];
+      v19Refresh('Please login to load your TODO list.');
+      if(note) note.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Login required for TODO.';
+      return;
+    }
+
+    try{
+      if(note) note.innerHTML = '<i class="fa-solid fa-database"></i> Loading your TODO data from Supabase...';
+
+      // STRICT RULE: Admin and Viewer both see ONLY their own user_id rows.
+      let res = await client.from('todos')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('position', { ascending:true, nullsFirst:false })
+        .order('created_at', { ascending:false });
+
+      if(res.error){
+        console.warn('Strict TODO sorted fetch failed. Retrying plain current-user select:', res.error.message);
+        res = await client.from('todos').select('*').eq('user_id', user.id);
+      }
+      if(res.error) throw res.error;
+
+      window.todos = (res.data || []).map(v19Normalize);
+      v19Sort();
+      v19Refresh();
+
+    }catch(err){
+      console.error('Strict user TODO load failed:', err);
+      window.todos = [];
+      const msg = err?.message || 'TODO fetch failed.';
+      v19Refresh(msg + ' Check todos.user_id column and RLS policy.');
+      if(note) note.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> TODO fetch failed: ${v19Escape(msg)}`;
+      if(typeof toast === 'function') toast('❌','TODO fetch failed.','var(--red)');
+    }
+  }
+
+  window.loadTodos = v19LoadTodos;
+
+  window.saveTodo = async function(){
+    const client = v19Client();
+    const user = await v19User();
+    if(!client || !user || !user.id){
+      if(typeof toast === 'function') toast('⚠️','Login required to save TODO. Please logout/login once.','var(--orange)');
+      return;
+    }
+
+    const title = (v19El('todoTitle')?.value || '').trim();
+    const desc = (v19El('todoDesc')?.value || '').trim();
+    const date = v19Date(v19El('todoDate')?.value || '');
+    const time = v19El('todoTime')?.value || '09:00';
+    const reminderType = v19El('todoReminderType')?.value || 'Mail';
+    const priority = v19El('todoPriority')?.value || 'Medium';
+
+    if(!title){
+      if(typeof toast === 'function') toast('⚠️','Please enter TODO title.','var(--orange)');
+      return;
+    }
+
+    try{
+      const nextPosition = (window.todos || []).length
+        ? Math.max(...(window.todos || []).map(t => Number(t.position || 0))) + 1
+        : 1;
+
+      const payload = {
+        title,
+        description: desc,
+        priority,
+        status: 'Pending',
+        deadline_date: date || null,
+        reminder_time: time,
+        reminder_type: reminderType,
+        position: nextPosition,
+        user_id: user.id,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await client.from('todos').insert([payload]).select('*').single();
+      if(error) throw error;
+
+      window.todos = [...(window.todos || []), v19Normalize(data || payload)];
+      v19Sort();
+
+      if(typeof closeTodoModal === 'function') closeTodoModal();
+      if(typeof resetTodoSaveButton === 'function') resetTodoSaveButton();
+      v19Refresh();
+      if(typeof toast === 'function') toast('✅','TODO saved.','var(--green)');
+      if(typeof addActivity === 'function') addActivity('todo','TODO created',title);
+
+      setTimeout(v19LoadTodos, 400);
+    }catch(err){
+      console.error('Strict user TODO save failed:', err);
+      if(typeof toast === 'function') toast('❌', err?.message || 'Failed to save TODO.', 'var(--red)');
+    }
+  };
+
+  window.updateTodo = async function(id){
+    const client = v19Client();
+    const user = await v19User();
+    if(!client || !user || !user.id){
+      if(typeof toast === 'function') toast('⚠️','Login required. Please logout/login once.','var(--orange)');
+      return;
+    }
+
+    const title = (v19El('todoTitle')?.value || '').trim();
+    if(!title){
+      if(typeof toast === 'function') toast('⚠️','Please enter TODO title.','var(--orange)');
+      return;
+    }
+
+    try{
+      const payload = {
+        title,
+        description: (v19El('todoDesc')?.value || '').trim(),
+        deadline_date: v19Date(v19El('todoDate')?.value || '') || null,
+        reminder_time: v19El('todoTime')?.value || '09:00',
+        reminder_type: v19El('todoReminderType')?.value || 'Mail',
+        priority: v19El('todoPriority')?.value || 'Medium',
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await client.from('todos')
+        .update(payload)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select('*')
+        .maybeSingle();
+
+      if(error) throw error;
+      if(!data) throw new Error('This TODO does not belong to the logged-in user.');
+
+      window.todos = (window.todos || []).map(t => String(t.id) === String(id) ? v19Normalize(data) : t);
+      v19Sort();
+
+      if(typeof closeTodoModal === 'function') closeTodoModal();
+      if(typeof resetTodoSaveButton === 'function') resetTodoSaveButton();
+      v19Refresh();
+      if(typeof toast === 'function') toast('✅','TODO updated.','var(--green)');
+      setTimeout(v19LoadTodos, 400);
+    }catch(err){
+      console.error('Strict user TODO update failed:', err);
+      if(typeof toast === 'function') toast('❌', err?.message || 'Failed to update TODO.', 'var(--red)');
+    }
+  };
+
+  window.toggleTodoDone = async function(id){
+    const client = v19Client();
+    const user = await v19User();
+    if(!client || !user || !user.id){
+      if(typeof toast === 'function') toast('⚠️','Login required. Please logout/login once.','var(--orange)');
+      return;
+    }
+
+    const todo = (window.todos || []).find(t => String(t.id) === String(id));
+    if(!todo) return;
+
+    const newStatus = todo.status === 'Completed' ? 'Pending' : 'Completed';
+
+    try{
+      const { data, error } = await client.from('todos')
+        .update({ status:newStatus, updated_at:new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select('*')
+        .maybeSingle();
+
+      if(error) throw error;
+      if(!data) throw new Error('This TODO does not belong to the logged-in user.');
+
+      window.todos = (window.todos || []).map(t => String(t.id) === String(id) ? v19Normalize(data) : t);
+      v19Refresh();
+      if(typeof toast === 'function') toast('✅','TODO status updated.','var(--green)');
+    }catch(err){
+      console.error('Strict user TODO status failed:', err);
+      if(typeof toast === 'function') toast('❌', err?.message || 'Failed to update TODO status.', 'var(--red)');
+    }
+  };
+
+  window.deleteTodo = async function(id){
+    const client = v19Client();
+    const user = await v19User();
+    if(!client || !user || !user.id){
+      if(typeof toast === 'function') toast('⚠️','Login required. Please logout/login once.','var(--orange)');
+      return;
+    }
+
+    try{
+      const { error } = await client.from('todos')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if(error) throw error;
+
+      window.todos = (window.todos || []).filter(t => String(t.id) !== String(id));
+      if(typeof closeTodoViewModal === 'function') closeTodoViewModal();
+      v19Refresh();
+      if(typeof toast === 'function') toast('🗑️','TODO deleted.','var(--red)');
+    }catch(err){
+      console.error('Strict user TODO delete failed:', err);
+      if(typeof toast === 'function') toast('❌', err?.message || 'Failed to delete TODO.', 'var(--red)');
+    }
+  };
+
+  // Keep UI scoped when page/tab/session changes.
+  const oldSwitchTabV19 = window.switchTab;
+  if(typeof oldSwitchTabV19 === 'function'){
+    window.switchTab = function(tab, item){
+      const out = oldSwitchTabV19.apply(this, arguments);
+      if(tab === 'todo' || tab === 'dashboard'){
+        setTimeout(v19LoadTodos, 250);
+      }
+      return out;
+    };
+  }
+
+  const oldApplyAuthSessionV19 = window.applyAuthSessionV1;
+  if(typeof oldApplyAuthSessionV19 === 'function'){
+    window.applyAuthSessionV1 = async function(session){
+      const result = await oldApplyAuthSessionV19.apply(this, arguments);
+      const user = session?.user || null;
+      if(user){
+        window.currentUserV1 = user;
+        window.opsCurrentUser = user;
+        window.todos = [];
+        setTimeout(v19LoadTodos, 250);
+      }
+      return result;
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(v19LoadTodos, 1500);
+  });
+})();
+</script>
