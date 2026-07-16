@@ -54,7 +54,7 @@ body{
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--text-tertiary);}
 
-.app{display:flex;height:100vh;overflow:hidden;background: url("/19807.jpg") center center / cover no-repeat;}
+.app{display:flex;height:100vh;overflow:hidden;}
 
 /* ---------- SIDEBAR ---------- */
 .sidebar{
@@ -491,6 +491,14 @@ textarea.finput{resize:vertical;min-height:70px;}
   min-height:100vh;width: min(100%, 650px) !important;display:flex;align-items:center;justify-content:center;padding:24px;
   background:radial-gradient(circle at 20% 20%,rgba(0,107,255,0.15),transparent 45%),radial-gradient(circle at 80% 80%,rgba(124,58,237,0.15),transparent 45%),var(--bg);
 }
+/* Only ever rendered as a sibling of .auth-wrap inside renderAuthScreen() — renderShell() (the
+   post-login app) replaces #app's innerHTML entirely with different markup that never includes
+   this element, so the background image can't leak into the app the way it did on .app itself. */
+.auth-image-panel{
+  flex:1;min-height:100vh;
+  background:url("/19807.jpg") center center / cover no-repeat;
+}
+@media(max-width:900px){ .auth-image-panel{display:none;} }
 .auth-card{
   width:100%;max-width:490px;background:var(--card);border:1px solid var(--border);border-radius:24px;
   padding:36px 32px;box-shadow:0 30px 80px rgba(0,0,0,0.35);
@@ -995,6 +1003,7 @@ function renderAuthScreen(errMsg){
         <div class="auth-footer" style="margin-top:14px;opacity:.7;">Authenticated by Supabase · ${SUPABASE_URL.replace('https://','')}</div>
       </div>
     </div>
+    <div class="auth-image-panel"></div>
   `;
   document.getElementById('auth-password').addEventListener('keydown', e=>{ if(e.key==='Enter') handleAuthSubmit(); });
 }
