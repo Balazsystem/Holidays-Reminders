@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --primary:#006BFF; --primary-dim:#0052CC;
@@ -239,11 +240,13 @@ body{
 .kpi-icon svg{width:17px;height:17px;}
 .kpi-val{font-size:30px;font-weight:800;font-family:var(--font-mono);margin-bottom:4px;}
 .kpi-trend{font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:3px;opacity:.9;}
-.kpi-c1{background:linear-gradient(145deg,#5B3DF6,#7C3AED);color:#fff;}
-.kpi-c2{background:linear-gradient(145deg,#059669,#02B07A);color:#fff;}
-.kpi-c3{background:linear-gradient(145deg,#0052CC,#006BFF);color:#fff;}
-.kpi-c4{background:linear-gradient(145deg,#6D28D9,#9333EA);color:#fff;}
-.kpi-c5{background:linear-gradient(145deg,#DC2626,#EF4444);color:#fff;}
+.kpi-c1{background:linear-gradient(120deg,#5B3DF6,#7C3AED,#9F6BFF,#7C3AED);background-size:300% 300%;color:#fff;animation:kpiGlow 8s ease-in-out infinite;}
+.kpi-c2{background:linear-gradient(120deg,#059669,#02B07A,#34D399,#02B07A);background-size:300% 300%;color:#fff;animation:kpiGlow 8s ease-in-out infinite;animation-delay:-2s;}
+.kpi-c3{background:linear-gradient(120deg,#0052CC,#006BFF,#4C9AFF,#006BFF);background-size:300% 300%;color:#fff;animation:kpiGlow 8s ease-in-out infinite;animation-delay:-4s;}
+.kpi-c4{background:linear-gradient(120deg,#6D28D9,#9333EA,#C084FC,#9333EA);background-size:300% 300%;color:#fff;animation:kpiGlow 8s ease-in-out infinite;animation-delay:-6s;}
+.kpi-c5{background:linear-gradient(120deg,#DC2626,#EF4444,#FB7185,#EF4444);background-size:300% 300%;color:#fff;animation:kpiGlow 8s ease-in-out infinite;animation-delay:-1s;}
+@keyframes kpiGlow{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+@media(prefers-reduced-motion: reduce){.kpi-c1,.kpi-c2,.kpi-c3,.kpi-c4,.kpi-c5{animation:none;}}
 
 .grid-3{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:18px;margin-bottom:18px;}
 .grid-2{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-bottom:18px;}
@@ -358,7 +361,8 @@ textarea.finput{resize:vertical;min-height:70px;}
 
 /* Filter tabs */
 .tab-row{display:flex;gap:6px;background:var(--card);border:1px solid var(--border);padding:4px;border-radius:12px;width:fit-content;margin-bottom:18px;}
-.tab-btn{padding:8px 16px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;border:none;background:none;font-family:inherit;transition:all .2s;}
+.tab-btn{padding:8px 16px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;border:none;background:none;font-family:inherit;transition:all .2s;display:inline-flex;align-items:center;gap:6px;line-height:1;}
+.tab-btn svg{flex-shrink:0;}
 .tab-btn.active{background:var(--primary);color:#fff;}
 
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
@@ -933,36 +937,44 @@ async function fetchOccasionsFromSheet(){
     return null;
   }
 }
+// Writes a change to the Occasions Google Sheet. IMPORTANT: uses text/plain (not application/json)
+// so the browser treats this as a CORS "simple request" and skips the preflight OPTIONS call —
+// Apps Script web apps don't implement OPTIONS, so a JSON content-type here silently blocks every
+// write at the browser level (writes looked fine locally but never reached the sheet). Never
+// throws — always resolves to {ok, error?} so callers can show a real toast instead of a silent failure.
 async function pushOccasionToSheet(action, occasion = {}) {
-
-    const body = {
-        action,
-        id: occasion.id || "",
-        date: occasion.date || "",
-        day: occasion.day || "",
-        name: occasion.name || "",
-        category: occasion.category || "",
-        status: occasion.status || "upcoming",
-        notes: occasion.desc || occasion.notes || "",
-        reminderTime: occasion.reminder || "09:00 AM",
-        attachment: occasion.attachment || ""
-    };
-
-    const res = await fetch(`${APPS_SCRIPT_URL}`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(body)
+  const body = {
+    action,
+    id: occasion.id || "",
+    date: occasion.date || "",
+    day: occasion.day || "",
+    name: occasion.name || "",
+    category: occasion.category || "",
+    status: occasion.status || "Upcoming",
+    notes: occasion.desc || occasion.notes || "",
+    reminderTime: occasion.reminder || "09:00 AM",
+    attachment: occasion.attachment || "",
+  };
+  try{
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(body),
     });
-
-    const json = await res.json();
-
-    if (json.status !== "success") {
-        throw new Error(json.message || "Failed to sync with Google Sheet");
+    const rawText = await res.text();
+    let json;
+    try{ json = JSON.parse(rawText); }
+    catch(_){ json = null; }
+    const succeeded = json && (json.status === 'success' || json.ok === true || json.result === 'success');
+    if(json && !succeeded){
+      return { ok:false, error: json.message || json.error || 'Apps Script reported failure' };
     }
-
-    return json;
+    backendStatus.occSheet = 'on';
+    return { ok:true, data: json };
+  }catch(e){
+    console.warn('Occasions sheet write failed:', e.message||e);
+    return { ok:false, error: e.message || String(e) };
+  }
 }
 
 /* ============ AUTH (Supabase real login / signup / logout) ============ */
@@ -989,7 +1001,7 @@ function renderAuthScreen(errMsg){
         ${authMode==='signup'?`<div class="form-group"><label>Full Name</label><input class="finput" id="auth-name" placeholder="Admin User"></div>`:''}
         <div class="form-group"><label>Email</label><input class="finput" id="auth-email" type="email" placeholder="you@zsystem.in"></div>
         <div class="form-group"><label>Password</label><input class="finput" id="auth-password" type="password" placeholder="••••••••"></div>
-        ${authMode==='signup'?`<div class="form-group"><label>Role</label><select class="finput" id="auth-role"><option>Viewer</option><option>Editor</option><option>Administrator</option></select></div>`:`
+        ${authMode==='signup'?``:`
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12.5px;">
           <label style="display:flex;align-items:center;gap:6px;color:var(--text-secondary);cursor:pointer;"><input type="checkbox" id="auth-remember" checked style="accent-color:var(--primary);">Remember me</label>
           <a class="auth-footer" style="margin:0;" onclick="handleForgotPassword()">Forgot password?</a>
@@ -1013,6 +1025,7 @@ async function handleAuthSubmit(){
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
   if(!email || !password){ document.getElementById('auth-error').textContent='Please enter both email and password.'; document.getElementById('auth-error').classList.add('show'); return; }
+  if(!isValidEmail(email)){ document.getElementById('auth-error').textContent='Please enter a valid email address.'; document.getElementById('auth-error').classList.add('show'); return; }
   authBusy = true;
   const btn = document.getElementById('auth-submit-btn');
   btn.disabled = true; btn.style.opacity='.7';
@@ -1024,7 +1037,7 @@ async function handleAuthSubmit(){
       onAuthSuccess();
     }else{
       const name = document.getElementById('auth-name').value.trim() || email.split('@')[0];
-      const role = FORCE_ADMIN_EMAILS.includes(email.toLowerCase()) ? 'Administrator' : document.getElementById('auth-role').value;
+      const role = FORCE_ADMIN_EMAILS.includes(email.toLowerCase()) ? 'Administrator' : 'Viewer';
       const { data, error } = await sb.auth.signUp({ email, password, options:{ data:{ full_name:name, role } } });
       if(error) throw error;
       sbInsert('profiles', { full_name:name, email, role, status:'Active' }).catch(()=>{});
@@ -1046,9 +1059,13 @@ async function handleAuthSubmit(){
 async function handleForgotPassword(){
   const email = document.getElementById('auth-email').value.trim();
   if(!email){ document.getElementById('auth-error').textContent='Enter your email above first, then tap "Forgot password?".'; document.getElementById('auth-error').classList.add('show'); return; }
+  if(!isValidEmail(email)){ document.getElementById('auth-error').textContent='Please enter a valid email address.'; document.getElementById('auth-error').classList.add('show'); return; }
   if(!sb) return;
   try{
-    const { error } = await sb.auth.resetPasswordForEmail(email);
+    // redirectTo is required — without it, Supabase sends the user back to whatever default
+    // "Site URL" is set in the project (often localhost), so the reset link looks broken even
+    // though the email itself sent fine. Pointing it at our own origin fixes that.
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
     if(error) throw error;
     toast('Password reset email sent (if that address is registered).');
   }catch(e){ toast(e.message||'Could not send reset email','error'); }
@@ -1077,7 +1094,104 @@ function onAuthSuccess(){
 
 /* ============ HELPERS ============ */
 function fmtDate(d){const dt=new Date(d+'T00:00:00');return {dd:dt.getDate(),mm:dt.toLocaleString('en',{month:'short'}).toUpperCase()};}
-function daysUntil(d){const dt=new Date(d+'T00:00:00');const now=new Date('2026-07-06T00:00:00');return Math.ceil((dt-now)/86400000);}
+function daysUntil(d){const dt=new Date(d+'T00:00:00');const now=new Date();now.setHours(0,0,0,0);return Math.ceil((dt-now)/86400000);}
+// Safely serializes a value (number OR string, e.g. a Supabase UUID) for use inside a
+// double-quoted HTML attribute like onclick="fn(...)". Plain JSON.stringify alone isn't enough:
+// for a string id it produces "quoted text" whose own double-quotes would prematurely close the
+// surrounding HTML attribute and corrupt the markup — so those get escaped to &quot; here, which
+// the browser decodes back to " before the onclick JS actually runs. Without this, any entity
+// with a non-numeric (UUID) id — e.g. real Supabase todos — breaks every click handler on it.
+function jsAttr(val){
+  return JSON.stringify(val).replace(/"/g, '&quot;');
+}
+// Escapes user-supplied text before it's interpolated into innerHTML template strings, so a
+// TODO/occasion/user name someone typed can never execute as HTML/script.
+function escapeHtml(str){
+  if(str===null||str===undefined) return '';
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function isValidEmail(email){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+// Converts an array of plain objects into a real .xlsx workbook and triggers a browser download —
+// replaces buttons that previously had no onclick handler at all (literally did nothing on click).
+function downloadExcel(filename, rows, sheetName){
+  if(!rows || !rows.length){ toast('Nothing to export yet','error'); return; }
+  if(typeof XLSX === 'undefined'){ toast('Excel library failed to load — check your network connection','error'); return; }
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Sheet1');
+  XLSX.writeFile(wb, filename);
+  toast('Downloaded '+filename);
+}
+function exportOccasionsExcel(){
+  downloadExcel('occasions.xlsx', occasions.map(o=>({
+    ID:o.id, Date:o.date, Day:o.day||'', Name:o.name, Category:o.category, Status:o.status, ReminderTime:o.reminder, Description:o.desc||'',
+  })), 'Occasions');
+}
+function importOccasionsCSV(){
+  if(!canEditContent()){ toast('Viewers cannot import occasions','error'); return; }
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.csv,.xlsx,.xls';
+  input.onchange = async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    let rows = [];
+    if(/\.xlsx?$/i.test(file.name) && typeof XLSX!=='undefined'){
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:'array'});
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+      rows = rows.map(r=>{
+        const norm={}; Object.keys(r).forEach(k=>norm[k.toLowerCase()]=r[k]); return norm;
+      });
+    }else{
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(l=>l.trim());
+      if(lines.length<2){ toast('File appears empty','error'); return; }
+      const headers = lines[0].split(',').map(h=>h.trim().toLowerCase());
+      rows = lines.slice(1).map(line=>{
+        const cells = line.split(','); const row={};
+        headers.forEach((h,i)=>row[h]=(cells[i]||'').trim()); return row;
+      });
+    }
+    let added = 0;
+    for(const row of rows){
+      const date = row.date, name = row.name || row['occasion name'];
+      if(!date || !name) continue;
+      const occ = {id:idCounter.occ++, date:String(date), name, category:row.category||'Custom', status:row.status||'Upcoming', reminder:row.remindertime||row['reminder time']||'09:00 AM', desc:row.description||''};
+      occasions.push(occ);
+      pushOccasionToSheet('addEvent', occ);
+      added++;
+    }
+    renderPage();
+    toast(`Imported ${added} occasion(s)`);
+    syncOccasionsFromSheet();
+  };
+  input.click();
+}
+function generateReport(kind){
+  const dateStr = TODAY_STR;
+  if(kind==='todo'){
+    downloadExcel(`todo-summary-${dateStr}.xlsx`, todos.map(t=>({
+      Title:t.title, Assignee:t.assignee, Priority:t.priority, Status:t.status, Deadline:t.deadline, Progress:t.progress+'%',
+    })), 'TODOs');
+  }else if(kind==='occasions'){
+    exportOccasionsExcel();
+  }else if(kind==='useractivity'){
+    downloadExcel(`user-activity-${dateStr}.xlsx`, activityLogs.map(a=>({Time:a.time, User:a.user, Action:a.action, Type:a.type})), 'Activity');
+  }else if(kind==='usage'){
+    downloadExcel(`system-usage-${dateStr}.xlsx`, [{
+      TotalTodos:todos.length, PendingTodos:todos.filter(t=>t.status==='Pending').length, CompletedTodos:todos.filter(t=>t.status==='Completed').length,
+      TotalOccasions:occasions.length, TotalUsers:users.length, ActiveUsers:users.filter(u=>u.status==='Active').length,
+      SupabaseStatus:backendStatus.supabase, SheetStatus:backendStatus.occSheet, GeneratedAt:new Date().toISOString(),
+    }], 'Usage');
+  }
+}
+function printReportsPage(){
+  toast('Opening print dialog for PDF export...');
+  setTimeout(()=>window.print(), 300);
+}
+const reportKindMap = {'TODO Summary Report':'todo','Occasions Report':'occasions','User Activity Report':'useractivity','System Usage Report':'usage'};
 function toast(msg,type){
   const t=document.createElement('div');
   t.className='toast toast-'+(type||'success');
@@ -1254,7 +1368,7 @@ function renderNotifDropdown(){
   dd.innerHTML = `<div class="dropdown-head"><h4>Notifications</h4><button class="link-btn" onclick="markAllRead()">Mark all read</button></div>` +
     notifications.slice(0,6).map(n=>{
       const m = iconMap[n.type];
-      return `<div class="notif-item${n.read?'':' unread'}" onclick="openNotif(${n.id})">
+      return `<div class="notif-item${n.read?'':' unread'}" onclick="openNotif(${jsAttr(n.id)})">
         <div class="notif-icon" style="background:${m.bg}">${icon(m.i)}</div>
         <div><div class="notif-title">${n.title}</div><div class="notif-msg">${n.msg}</div><div class="notif-time">${n.time}</div></div>
       </div>`;
@@ -1336,8 +1450,8 @@ function renderOccasions(){
         </div>
         <div class="search-sm flex1">${icon('search')}<input placeholder="Search occasion..." value="${state.occSearch}" oninput="setOccSearch(this.value)"></div>
         <div class="toolbar-group">
-          <button class="btn btn-ghost btn-sm">${icon('download')}<span class="btn-label">Import CSV</span></button>
-          <button class="btn btn-ghost btn-sm">${icon('download')}<span class="btn-label">Export Excel</span></button>
+          <button class="btn btn-ghost btn-sm" onclick="importOccasionsCSV()">${icon('download')}<span class="btn-label">Import CSV</span></button>
+          <button class="btn btn-ghost btn-sm" onclick="exportOccasionsExcel()">${icon('download')}<span class="btn-label">Export Excel</span></button>
         </div>
       </div>
       ${list.length===0?`<div class="empty-state">${icon('gift')}<p>No occasions match your filters.</p></div>`:`
@@ -1353,9 +1467,9 @@ function renderOccasions(){
               <td><span class="badge ${o.status==='Upcoming'?'badge-progress':'badge-completed'}">${o.status}</span></td>
               <td>${o.reminder}</td>
               <td><div class="row-actions">
-                ${roleActionBtns(`<div class="mini-btn" onclick="openOccModal(${o.id})">${icon('edit')}</div>
-                <div class="mini-btn" onclick="duplicateOcc(${o.id})">${icon('copy')}</div>
-                <div class="mini-btn danger" onclick="deleteOcc(${o.id})">${icon('trash')}</div>`)}
+                ${roleActionBtns(`<div class="mini-btn" onclick="openOccModal(${jsAttr(o.id)})">${icon('edit')}</div>
+                <div class="mini-btn" onclick="duplicateOcc(${jsAttr(o.id)})">${icon('copy')}</div>
+                <div class="mini-btn danger" onclick="deleteOcc(${jsAttr(o.id)})">${icon('trash')}</div>`)}
                 ${!canEditContent()?`<span style="font-size:11px;color:var(--text-tertiary);">View only</span>`:''}
               </div></td>
             </tr>`).join('')}
@@ -1375,9 +1489,9 @@ function renderOccasions(){
             </div>
             <div class="mc-card-meta"><span>${icon('clock')} ${o.reminder}</span></div>
             <div class="mc-card-actions">
-              ${roleActionBtns(`<div class="mini-btn" onclick="openOccModal(${o.id})">${icon('edit')}</div>
-              <div class="mini-btn" onclick="duplicateOcc(${o.id})">${icon('copy')}</div>
-              <div class="mini-btn danger" onclick="deleteOcc(${o.id})">${icon('trash')}</div>`)}
+              ${roleActionBtns(`<div class="mini-btn" onclick="openOccModal(${jsAttr(o.id)})">${icon('edit')}</div>
+              <div class="mini-btn" onclick="duplicateOcc(${jsAttr(o.id)})">${icon('copy')}</div>
+              <div class="mini-btn danger" onclick="deleteOcc(${jsAttr(o.id)})">${icon('trash')}</div>`)}
               ${!canEditContent()?`<span style="font-size:11px;color:var(--text-tertiary);align-self:center;">View only</span>`:''}
             </div>
           </div>`;}).join('')}
@@ -1391,23 +1505,48 @@ function setOccFilter(f){ state.occFilter=f; renderPage(); }
 function setOccMonth(v){ state.occMonth=v; renderPage(); }
 function setOccCategory(v){ state.occCategory=v; renderPage(); }
 function setOccSearch(v){ state.occSearch=v; renderPage(); document.querySelector('.search-sm input').focus(); }
-function deleteOcc(id){
+async function deleteOcc(id){
   if(!canEditContent()){ toast('Viewers cannot delete occasions','error'); return; }
-  if(confirm('Delete this occasion? This cannot be undone.')){
-    const o = occasions.find(x=>x.id===id);
-    occasions = occasions.filter(o=>o.id!==id);
-    renderPage(); toast('Occasion deleted');
-    if (o) pushOccasionToSheet('deleteEvent', o);
-    logActivity(`Deleted occasion "${o?o.name:id}"`, 'Occasion Edited');
+  if(!confirm('Delete this occasion? This cannot be undone.')) return;
+  const o = occasions.find(x=>x.id===id);
+  if(!o) return;
+  occasions = occasions.filter(x=>x.id!==id);
+  renderPage();
+  toast('Deleting from Google Sheet...');
+  const result = await pushOccasionToSheet('deleteEvent', o);
+  if(result.ok){
+    toast('Occasion deleted');
+    logActivity(`Deleted occasion "${o.name}"`, 'Occasion Edited');
+  }else{
+    occasions.push(o); renderPage();
+    toast('Could not delete from Google Sheet: ' + result.error, 'error');
   }
+  syncOccasionsFromSheet();
 }
-function duplicateOcc(id){
+async function duplicateOcc(id){
   if(!canEditContent()){ toast('Viewers cannot duplicate occasions','error'); return; }
   const o = occasions.find(x=>x.id===id);
-  if(o){
-    const copy = {...o, id:idCounter.occ++, name:o.name+' (Copy)'};
-    occasions.push(copy); renderPage(); toast('Occasion duplicated');
-    pushOccasionToSheet('addEvent', copy);
+  if(!o) return;
+  const copy = {...o, id:idCounter.occ++, name:o.name+' (Copy)'};
+  occasions.push(copy); renderPage();
+  toast('Adding to Google Sheet...');
+  const result = await pushOccasionToSheet('addEvent', copy);
+  if(result.ok){
+    toast('Occasion duplicated');
+    logActivity(`Duplicated occasion "${o.name}"`, 'Occasion Edited');
+  }else{
+    occasions = occasions.filter(x=>x.id!==copy.id); renderPage();
+    toast('Could not add to Google Sheet: ' + result.error, 'error');
+  }
+  syncOccasionsFromSheet();
+}
+// After any successful write, silently re-pull the sheet in the background so local state
+// (including whatever ID the sheet itself assigned) stays reconciled with the source of truth.
+async function syncOccasionsFromSheet(){
+  const fresh = await fetchOccasionsFromSheet();
+  if(fresh && fresh.length){
+    occasions = fresh;
+    if(['occasions','dashboard','calendar','reports'].includes(state.currentPage)){ renderPage(); }
   }
 }
 function openOccModal(id){
@@ -1433,29 +1572,47 @@ function openOccModal(id){
     <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">${readOnly?'Close':'Cancel'}</button>${readOnly?'':`<button class="btn btn-primary" onclick="saveOcc(${editing?editing.id:'null'})">${icon('check')}Save Occasion</button>`}</div>
   `);
 }
-function saveOcc(id){
+async function saveOcc(id){
   if(!canEditContent() && id){ toast('Viewers cannot edit occasions','error'); return; }
   const date=document.getElementById('f-occ-date').value;
   const name=document.getElementById('f-occ-name').value.trim();
   if(!date || !name){ toast('Please fill in date and name','error'); return; }
+  if(name.length>200){ toast('Occasion name is too long (max 200 characters)','error'); return; }
   const data = {
     date, name,
     category:document.getElementById('f-occ-category').value,
     reminder:document.getElementById('f-occ-reminder').value,
     desc:document.getElementById('f-occ-desc').value,
-    status: new Date(date) >= new Date('2026-07-06') ? 'Upcoming' : 'Completed',
+    status: new Date(date) >= new Date(TODAY_STR) ? 'Upcoming' : 'Completed',
   };
+  closeModal();
   if(id){
-    Object.assign(occasions.find(o=>o.id===id), data); toast('Occasion updated');
-    pushOccasionToSheet('updateEvent', { id, ...data });
-    logActivity(`Edited occasion "${name}"`, 'Occasion Edited');
+    const existing = occasions.find(o=>o.id===id);
+    const before = {...existing};
+    Object.assign(existing, data); renderPage();
+    toast('Saving to Google Sheet...');
+    const result = await pushOccasionToSheet('updateEvent', { id, ...data });
+    if(result.ok){
+      toast('Occasion updated');
+      logActivity(`Edited occasion "${name}"`, 'Occasion Edited');
+    }else{
+      Object.assign(existing, before); renderPage();
+      toast('Could not update Google Sheet: ' + result.error, 'error');
+    }
   } else{
     const local = {id:idCounter.occ++, ...data};
-    occasions.push(local); toast('Occasion added');
-    pushOccasionToSheet('addEvent', local);
-    logActivity(`Added occasion "${name}"`, 'Occasion Edited');
+    occasions.push(local); renderPage();
+    toast('Saving to Google Sheet...');
+    const result = await pushOccasionToSheet('addEvent', local);
+    if(result.ok){
+      toast('Occasion added');
+      logActivity(`Added occasion "${name}"`, 'Occasion Edited');
+    }else{
+      occasions = occasions.filter(o=>o.id!==local.id); renderPage();
+      toast('Could not add to Google Sheet: ' + result.error, 'error');
+    }
   }
-  closeModal(); renderPage();
+  syncOccasionsFromSheet();
 }
 
 /* ============ TODO MANAGER PAGE ============ */
@@ -1495,9 +1652,9 @@ function renderKanban(list){
       return `<div class="kanban-col" data-col="${col.id}" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event,'${col.id}')">
         <div class="kcol-head"><span class="kcol-dot" style="background:${col.color}"></span><span class="kcol-title">${col.label}</span><span class="kcol-count">${items.length}</span></div>
         ${items.map(t=>`
-          <div class="kcard" draggable="${draggable}" ${draggable?`ondragstart="handleDragStart(event,${t.id})" ondragend="this.classList.remove('dragging')"`:''} onclick="openTodoModal(${t.id})">
+          <div class="kcard" draggable="${draggable}" ${draggable?`ondragstart="handleDragStart(event,${jsAttr(t.id)})" ondragend="this.classList.remove('dragging')"`:''} onclick="openTodoModal(${jsAttr(t.id)})">
             <div class="kcard-top"><span class="badge ${badgeClass(t.priority)}">${t.priority}</span>
-              ${draggable?`<div class="mini-btn danger" onclick="event.stopPropagation();deleteTodo(${t.id})">${icon('trash')}</div>`:''}
+              ${draggable?`<div class="mini-btn danger" onclick="event.stopPropagation();deleteTodo(${jsAttr(t.id)})">${icon('trash')}</div>`:''}
             </div>
             <div class="kcard-title">${t.title}</div>
             <div class="kcard-desc">${t.desc}</div>
@@ -1524,8 +1681,8 @@ function renderTodoTable(list){
             <td><span class="badge ${badgeClass(t.status)}">${statusLabel(t.status)}</span></td>
             <td style="width:120px;"><div class="kcard-progress" style="margin-top:0;"><div class="kcard-progress-fill" style="width:${t.progress}%"></div></div></td>
             <td><div class="row-actions">
-              ${roleActionBtns(`<div class="mini-btn" onclick="openTodoModal(${t.id})">${icon('edit')}</div>
-              <div class="mini-btn danger" onclick="deleteTodo(${t.id})">${icon('trash')}</div>`)}
+              ${roleActionBtns(`<div class="mini-btn" onclick="openTodoModal(${jsAttr(t.id)})">${icon('edit')}</div>
+              <div class="mini-btn danger" onclick="deleteTodo(${jsAttr(t.id)})">${icon('trash')}</div>`)}
               ${!canEditContent()?`<span style="font-size:11px;color:var(--text-tertiary);">View only</span>`:''}
             </div></td>
           </tr>`).join('')}
@@ -1538,25 +1695,37 @@ function setTodoView(v){ state.todoView=v; renderPage(); }
 function setTodoSearch(v){ state.todoSearch=v; renderPage(); document.querySelector('.search-sm input')?.focus(); }
 let dragTodoId = null;
 function handleDragStart(e,id){ dragTodoId=id; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
-function handleDrop(e,colId){
+async function handleDrop(e,colId){
   e.preventDefault(); e.currentTarget.classList.remove('drag-over');
   if(!canEditContent()){ toast('Viewers cannot move tasks','error'); return; }
   const t = todos.find(x=>x.id===dragTodoId);
-  if(t){
-    t.status=colId; if(colId==='Completed'){t.progress=100;}
-    renderPage(); toast('Task moved to '+TODO_COLS.find(c=>c.id===colId).label);
-    sbUpdate('todos', t.id, {status:t.status, progress:t.progress});
+  if(!t) return;
+  const before = {status:t.status, progress:t.progress};
+  t.status=colId; if(colId==='Completed'){t.progress=100;}
+  renderPage();
+  const ok = await sbUpdate('todos', t.id, {status:t.status, progress:t.progress});
+  if(ok){
+    toast('Task moved to '+TODO_COLS.find(c=>c.id===colId).label);
     logActivity(`Moved TODO "${t.title}" to ${TODO_COLS.find(c=>c.id===colId).label}`, 'TODO Added');
+  }else{
+    Object.assign(t, before); renderPage();
+    toast('Could not save to Supabase — task move reverted','error');
   }
 }
 function initTodoDragDrop(){ /* handled via inline dragstart/drop attrs */ }
-function deleteTodo(id){
+async function deleteTodo(id){
   if(!canEditContent()){ toast('Viewers cannot delete TODOs','error'); return; }
-  if(confirm('Delete this TODO? This cannot be undone.')){
-    const t = todos.find(x=>x.id===id);
-    todos = todos.filter(t=>t.id!==id); renderPage(); toast('TODO deleted');
-    sbDelete('todos', id);
-    logActivity(`Deleted TODO "${t?t.title:id}"`, 'TODO Deleted');
+  if(!confirm('Delete this TODO? This cannot be undone.')) return;
+  const t = todos.find(x=>x.id===id);
+  if(!t) return;
+  todos = todos.filter(x=>x.id!==id); renderPage();
+  const ok = await sbDelete('todos', id);
+  if(ok){
+    toast('TODO deleted');
+    logActivity(`Deleted TODO "${t.title}"`, 'TODO Deleted');
+  }else{
+    todos.push(t); renderPage();
+    toast('Could not delete from Supabase — restored locally','error');
   }
 }
 function openTodoModal(id,presetStatus){
@@ -1587,10 +1756,11 @@ function openTodoModal(id,presetStatus){
     <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">${readOnly?'Close':'Cancel'}</button>${readOnly?'':`<button class="btn btn-primary" onclick="saveTodo(${editing?editing.id:'null'})">${icon('check')}Save TODO</button>`}</div>
   `);
 }
-function saveTodo(id){
+async function saveTodo(id){
   if(!canEditContent() && id){ toast('Viewers cannot edit TODOs','error'); return; }
   const title = document.getElementById('f-todo-title').value.trim();
   if(!title){ toast('Please enter a title','error'); return; }
+  if(title.length>200){ toast('Title is too long (max 200 characters)','error'); return; }
   const status = document.getElementById('f-todo-status').value;
   const data = {
     title, desc:document.getElementById('f-todo-desc').value,
@@ -1599,24 +1769,44 @@ function saveTodo(id){
     priority:document.getElementById('f-todo-priority').value,
     status, progress: status==='Completed'?100:(status==='Pending'?0:50),
   };
+  closeModal();
   if(id){
-    Object.assign(todos.find(t=>t.id===id), data); toast('TODO updated');
-    sbUpdate('todos', id, data);
-    logActivity(`Edited TODO "${title}"`, 'TODO Added');
+    const existing = todos.find(t=>t.id===id);
+    const before = {...existing};
+    Object.assign(existing, data); renderPage();
+    const ok = await sbUpdate('todos', id, data);
+    if(ok){
+      toast('TODO updated');
+      logActivity(`Edited TODO "${title}"`, 'TODO Added');
+    }else{
+      Object.assign(existing, before); renderPage();
+      toast('Could not save to Supabase — change reverted','error');
+    }
   } else{
     const local = {id:idCounter.todo++, tags:[], ...data};
-    todos.push(local); toast('TODO added');
-    sbInsert('todos', data).then(r=>{ if(r && r.id){ local.id = r.id; } });
-    logActivity(`Added TODO "${title}"`, 'TODO Added');
+    todos.push(local); renderPage();
+    const saved = await sbInsert('todos', data);
+    if(saved){
+      if(saved.id) local.id = saved.id;
+      toast('TODO added');
+      logActivity(`Added TODO "${title}"`, 'TODO Added');
+    }else if(sb){
+      todos = todos.filter(t=>t.id!==local.id); renderPage();
+      toast('Could not save to Supabase — TODO not added','error');
+    }else{
+      toast('TODO added (offline — Supabase not connected)');
+    }
   }
-  closeModal(); renderPage();
 }
 
 /* ============ CALENDAR PAGE ============ */
-let calMonth = 6, calYear = 2026; // July 2026 (0-indexed month)
+// Was hardcoded to July 6, 2026 forever — "Today" never meant today, and the calendar always
+// opened on a fixed month regardless of the actual date. Now derived from the real clock.
+const NOW = new Date();
+const TODAY_STR = `${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}-${String(NOW.getDate()).padStart(2,'0')}`;
+let calMonth = NOW.getMonth(), calYear = NOW.getFullYear();
 let calView = 'month';
-let calCursor = '2026-07-06'; // reference date for week/day views
-const TODAY_STR = '2026-07-06';
+let calCursor = TODAY_STR; // reference date for week/day views
 function allCalEvents(){
   const evs=[];
   occasions.forEach(o=>evs.push({date:o.date,label:o.name,color:catColor(o.category),type:'Occasion',refId:o.id,kind:'occasion'}));
@@ -1675,7 +1865,7 @@ function shiftCal(dir){
   }
   renderPage();
 }
-function goToToday(){ calCursor = TODAY_STR; calMonth = 6; calYear = 2026; renderPage(); }
+function goToToday(){ calCursor = TODAY_STR; calMonth = NOW.getMonth(); calYear = NOW.getFullYear(); renderPage(); }
 function renderCalendar(){
   const events = allCalEvents();
   if(calView==='week') return renderCalWeek(events);
@@ -1801,7 +1991,7 @@ function renderNotifications(){
     <div class="hero-row"><div class="hero-title">Notifications</div><button class="btn btn-ghost" onclick="markAllRead()">${icon('check')}Mark all as read</button></div>
     <div class="card">
       ${notifications.map(n=>{const m=iconMap[n.type];return `
-        <div class="notif-item${n.read?'':' unread'}" onclick="openNotif(${n.id})">
+        <div class="notif-item${n.read?'':' unread'}" onclick="openNotif(${jsAttr(n.id)})">
           <div class="notif-icon" style="background:${m.bg}">${icon(m.i)}</div>
           <div style="flex:1;"><div class="notif-title">${n.title}</div><div class="notif-msg">${n.msg}</div><div class="notif-time">${n.time}</div></div>
         </div>`;}).join('')}
@@ -1819,8 +2009,8 @@ function renderReports(){
     <div class="hero-row"><div class="hero-title">Reports</div>
       <div style="display:flex;gap:8px;">
         <select class="select-sm"><option>Last 30 Days</option><option>Last 7 Days</option><option>Last 90 Days</option><option>This Year</option><option>Custom</option></select>
-        <button class="btn btn-ghost btn-sm">${icon('download')}Export PDF</button>
-        <button class="btn btn-ghost btn-sm">${icon('download')}Export Excel</button>
+        <button class="btn btn-ghost btn-sm" onclick="printReportsPage()">${icon('download')}Export PDF</button>
+        <button class="btn btn-ghost btn-sm" onclick="generateReport('usage')">${icon('download')}Export Excel</button>
       </div>
     </div>
     <div class="kpi-grid kpi-grid-4">
@@ -1838,62 +2028,97 @@ function renderReports(){
       <div class="card">
         <div class="section-title">Generate Report</div>
         ${['TODO Summary Report','Occasions Report','User Activity Report','System Usage Report'].map(r=>`
-          <div class="qa-btn" style="width:100%;margin-bottom:10px;" onclick="toast('Generating ${r}...')"><div class="qa-icon" style="background:var(--primary)">${icon('chart')}</div>${r}<span style="margin-left:auto;color:var(--text-tertiary);">${icon('chevronR')}</span></div>`).join('')}
+          <div class="qa-btn" style="width:100%;margin-bottom:10px;" onclick="generateReport(reportKindMap['${r}'])"><div class="qa-icon" style="background:var(--primary)">${icon('chart')}</div>${r}<span style="margin-left:auto;color:var(--text-tertiary);">${icon('chevronR')}</span></div>`).join('')}
       </div>
     </div>
   `;
+}
+// Real completion trend over the last 4 weeks — replaces a fixed fake [12,19,15,24] array.
+function computeCompletionTrend(){
+  const today = new Date(TODAY_STR+'T00:00:00');
+  const counts = [];
+  for(let w=3; w>=0; w--){
+    const end = new Date(today); end.setDate(today.getDate()-w*7);
+    const start = new Date(end); start.setDate(end.getDate()-6);
+    counts.push(todos.filter(t=>{
+      if(t.status!=='Completed') return false;
+      const dt = new Date(t.deadline+'T00:00:00');
+      return dt>=start && dt<=end;
+    }).length);
+  }
+  return counts;
+}
+// Real occasion counts for the 6 months ending this month — replaces a fixed fake [4,6,5,8,7,9] array.
+function computeMonthlyOccasionVolume(){
+  const today = new Date(TODAY_STR+'T00:00:00');
+  const labels=[], counts=[];
+  for(let m=5; m>=0; m--){
+    const d = new Date(today.getFullYear(), today.getMonth()-m, 1);
+    const y=d.getFullYear(), mo=d.getMonth();
+    labels.push(d.toLocaleString('en',{month:'short'}));
+    counts.push(occasions.filter(o=>{
+      const od = new Date(o.date+'T00:00:00');
+      return od.getFullYear()===y && od.getMonth()===mo;
+    }).length);
+  }
+  return {labels, counts};
 }
 function initReportCharts(){
   destroyChart('trend'); destroyChart('category'); destroyChart('monthly');
   const textColor = getComputedStyle(document.body).getPropertyValue('--text-secondary');
   const gridColor = getComputedStyle(document.body).getPropertyValue('--border');
   const c1=document.getElementById('chart-trend');
-  if(c1){ charts.trend = new Chart(c1,{type:'line',data:{labels:['W1','W2','W3','W4'],datasets:[{label:'Completed',data:[12,19,15,24],borderColor:'#02B07A',backgroundColor:'rgba(2,176,122,0.15)',fill:true,tension:.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:gridColor},ticks:{color:textColor}},x:{grid:{display:false},ticks:{color:textColor}}}}}); }
+  if(c1){ charts.trend = new Chart(c1,{type:'line',data:{labels:['3wk ago','2wk ago','Last wk','This wk'],datasets:[{label:'Completed',data:computeCompletionTrend(),borderColor:'#02B07A',backgroundColor:'rgba(2,176,122,0.15)',fill:true,tension:.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0,color:textColor},grid:{color:gridColor}},x:{grid:{display:false},ticks:{color:textColor}}}}}); }
   const c2=document.getElementById('chart-category');
   if(c2){
     const cats = [...new Set(occasions.map(o=>o.category))];
     const counts = cats.map(c=>occasions.filter(o=>o.category===c).length);
-    charts.category = new Chart(c2,{type:'pie',data:{labels:cats,datasets:[{data:counts,backgroundColor:cats.map(catColor),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:textColor,boxWidth:10,font:{size:10.5}}}}}});
+    if(cats.length===0){
+      c2.parentElement.innerHTML = `<div class="empty-state">${icon('gift')}<p>No occasions to chart yet.</p></div>`;
+    }else{
+      charts.category = new Chart(c2,{type:'pie',data:{labels:cats,datasets:[{data:counts,backgroundColor:cats.map(catColor),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:textColor,boxWidth:10,font:{size:10.5}}}}}});
+    }
   }
   const c3=document.getElementById('chart-monthly');
-  if(c3){ charts.monthly = new Chart(c3,{type:'bar',data:{labels:['Feb','Mar','Apr','May','Jun','Jul'],datasets:[{label:'Occasions',data:[4,6,5,8,7,9],backgroundColor:'#006BFF',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:gridColor},ticks:{color:textColor}},x:{grid:{display:false},ticks:{color:textColor}}}}}); }
+  if(c3){
+    const {labels, counts} = computeMonthlyOccasionVolume();
+    charts.monthly = new Chart(c3,{type:'bar',data:{labels,datasets:[{label:'Occasions',data:counts,backgroundColor:'#006BFF',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0,color:textColor},grid:{color:gridColor}},x:{grid:{display:false},ticks:{color:textColor}}}}});
+  }
 }
 
 /* ============ USERS PAGE ============ */
 function renderUsers(){
-  const admins = users.filter(u=>u.role==='Administrator').length;
-  const viewers = users.filter(u=>u.role==='Viewer').length;
   const active = users.filter(u=>u.status==='Active').length;
+  const inactive = users.filter(u=>u.status!=='Active').length;
   const manage = canManageUsers();
   return `
     <div class="breadcrumb"><span>Home</span> ${icon('chevronR')} <span class="cur">Users</span></div>
     <div class="hero-row"><div class="hero-title">Users</div>${manage?`<button class="btn btn-primary" onclick="openUserModal()">${icon('plus')}Add User</button>`:''}</div>
     <div class="kpi-grid kpi-grid-4">
       <div class="kpi-card kpi-c1"><div class="kpi-top"><span class="kpi-label">Total Users</span><div class="kpi-icon">${icon('users')}</div></div><div class="kpi-val">${users.length}</div></div>
-      <div class="kpi-card kpi-c4"><div class="kpi-top"><span class="kpi-label">Administrators</span><div class="kpi-icon">${icon('lock')}</div></div><div class="kpi-val">${admins}</div></div>
-      <div class="kpi-card kpi-c3"><div class="kpi-top"><span class="kpi-label">Viewers</span><div class="kpi-icon">${icon('eye')}</div></div><div class="kpi-val">${viewers}</div></div>
-      <div class="kpi-card kpi-c2"><div class="kpi-top"><span class="kpi-label">Active Users</span><div class="kpi-icon">${icon('activity')}</div></div><div class="kpi-val">${active}</div></div>
+      <div class="kpi-card kpi-c2"><div class="kpi-top"><span class="kpi-label">Active</span><div class="kpi-icon">${icon('activity')}</div></div><div class="kpi-val">${active}</div></div>
+      <div class="kpi-card kpi-c3"><div class="kpi-top"><span class="kpi-label">Inactive</span><div class="kpi-icon">${icon('clock')}</div></div><div class="kpi-val">${inactive}</div></div>
+      <div class="kpi-card kpi-c4"><div class="kpi-top"><span class="kpi-label">Online Now</span><div class="kpi-icon">${icon('globe')}</div></div><div class="kpi-val">${users.filter(u=>u.online).length}</div></div>
     </div>
-    ${!manage?`<div style="display:flex;align-items:center;gap:8px;background:rgba(245,158,11,0.1);color:#FBBF24;border:1px solid rgba(245,158,11,0.25);padding:10px 14px;border-radius:12px;font-size:12.5px;margin-bottom:16px;">${icon('lock')} You're viewing in read-only mode — only Administrators can add, edit, or remove users.</div>`:''}
+    ${!manage?`<div style="display:flex;align-items:center;gap:8px;background:rgba(245,158,11,0.1);color:#FBBF24;border:1px solid rgba(245,158,11,0.25);padding:10px 14px;border-radius:12px;font-size:12.5px;margin-bottom:16px;">${icon('lock')} You're viewing in read-only mode.</div>`:''}
     <div class="card">
       <div class="toolbar">
         <div class="search-sm flex1">${icon('search')}<input placeholder="Search users..."></div>
-        <select class="select-sm"><option>All Roles</option><option>Administrator</option><option>Editor</option><option>Viewer</option></select>
+        <select class="select-sm"><option>All Status</option><option>Active</option><option>Inactive</option></select>
       </div>
       <div class="table-scroll">
       <table class="data-table">
-        <thead><tr><th>User Name</th><th>Email</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
+        <thead><tr><th>User Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
         <tbody>
           ${users.map(u=>`
             <tr>
               <td style="display:flex;align-items:center;gap:10px;font-weight:600;"><div class="kcard-avatar" style="width:28px;height:28px;font-size:11px;">${u.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>${u.name}</td>
               <td>${u.email}</td>
-              <td><span class="badge ${u.role==='Administrator'?'badge-progress':u.role==='Editor'?'badge-medium':'badge-low'}">${u.role}</span></td>
               <td><span class="badge ${u.status==='Active'?'badge-completed':'badge-hold'}">${u.status}</span></td>
               <td><div class="row-actions">
-                ${manage?`<div class="mini-btn" onclick="openUserModal(${u.id})" title="Edit">${icon('edit')}</div>
-                <div class="mini-btn" onclick="adminResetPassword('${u.email}')" title="Send password reset">${icon('lock')}</div>
-                <div class="mini-btn danger" onclick="deleteUser(${u.id})" title="Remove">${icon('trash')}</div>`:`<span style="font-size:11px;color:var(--text-tertiary);">View only</span>`}
+                ${manage?`<div class="mini-btn" onclick="openUserModal(${jsAttr(u.id)})" title="Edit">${icon('edit')}</div>
+                <div class="mini-btn" onclick="adminResetPassword(${jsAttr(u.email)})" title="Send password reset">${icon('lock')}</div>
+                <div class="mini-btn danger" onclick="deleteUser(${jsAttr(u.id)})" title="Remove">${icon('trash')}</div>`:`<span style="font-size:11px;color:var(--text-tertiary);">View only</span>`}
               </div></td>
             </tr>`).join('')}
         </tbody>
@@ -1910,13 +2135,12 @@ function renderUsers(){
               </div>
             </div>
             <div class="mc-card-meta">
-              <span class="badge ${u.role==='Administrator'?'badge-progress':u.role==='Editor'?'badge-medium':'badge-low'}">${u.role}</span>
               <span class="badge ${u.status==='Active'?'badge-completed':'badge-hold'}">${u.status}</span>
             </div>
             ${manage?`<div class="mc-card-actions">
-              <div class="mini-btn" onclick="openUserModal(${u.id})">${icon('edit')}</div>
-              <div class="mini-btn" onclick="adminResetPassword('${u.email}')">${icon('lock')}</div>
-              <div class="mini-btn danger" onclick="deleteUser(${u.id})">${icon('trash')}</div>
+              <div class="mini-btn" onclick="openUserModal(${jsAttr(u.id)})">${icon('edit')}</div>
+              <div class="mini-btn" onclick="adminResetPassword(${jsAttr(u.email)})">${icon('lock')}</div>
+              <div class="mini-btn danger" onclick="deleteUser(${jsAttr(u.id)})">${icon('trash')}</div>
             </div>`:''}
           </div>`).join('')}
       </div>
@@ -2051,7 +2275,7 @@ function renderSettings(){
               <button class="btn btn-ghost btn-sm">Change Photo</button>
             </div>
             <div class="form-row"><div class="form-group"><label>Full Name</label><input class="finput" value="${state.currentUser.name}"></div><div class="form-group"><label>Email</label><input class="finput" value="${state.currentUser.email||''}"></div></div>
-            <div class="form-row"><div class="form-group"><label>Role</label><input class="finput" value="${state.currentUser.role}" disabled></div><div class="form-group"><label>Timezone</label><select class="finput"><option>Asia/Kolkata (IST)</option></select></div></div>
+            <div class="form-row"><div class="form-group"><label>Timezone</label><select class="finput"><option>Asia/Kolkata (IST)</option></select></div></div>
             <button class="btn btn-primary" onclick="toast('Profile updated')">${icon('check')}Save Changes</button>
           </div>`:''}
           ${settingsTab==='company'?`
@@ -2196,7 +2420,7 @@ function renderDashboard(){
         <div class="section-title">Recent TODOs <button class="link-btn" onclick="navigateTo('todos')">View All</button></div>
         ${recentTodos.map(t=>`
           <div class="todo-row">
-            <div class="checkbox${t.status==='Completed'?' checked':''}" onclick="quickToggleTodo(${t.id})">${icon('check')}</div>
+            <div class="checkbox${t.status==='Completed'?' checked':''}" onclick="quickToggleTodo(${jsAttr(t.id)})">${icon('check')}</div>
             <div class="todo-title${t.status==='Completed'?' done':''}">${t.title}</div>
             <span class="badge ${badgeClass(t.priority)}">${t.priority}</span>
             <span class="todo-date">${t.deadline}</span>
@@ -2230,6 +2454,21 @@ function renderDashboard(){
 }
 let charts = {};
 function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+// Real per-day TODO counts for the current week (Mon-Sun) — this used to be a fixed fake array
+// [38,29,24,41,52,44,36] that never reflected the actual todos array.
+function computeWeeklyTodoOverview(){
+  const today = new Date(TODAY_STR+'T00:00:00');
+  const dow = today.getDay();
+  const mondayOffset = dow===0 ? -6 : 1-dow;
+  const monday = new Date(today); monday.setDate(today.getDate()+mondayOffset);
+  const counts = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    const dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    counts.push(todos.filter(t=>t.deadline===dStr).length);
+  }
+  return counts;
+}
 function initDashboardCharts(){
   destroyChart('overview'); destroyChart('priority');
   const ctx1 = document.getElementById('chart-overview');
@@ -2239,9 +2478,9 @@ function initDashboardCharts(){
     charts.overview = new Chart(ctx1, {
       type:'line',
       data:{labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
-        datasets:[{label:'Tasks',data:[38,29,24,41,52,44,36],borderColor:'#7C3AED',backgroundColor:'rgba(124,58,237,0.15)',fill:true,tension:.4,pointRadius:3,pointBackgroundColor:'#7C3AED'}]},
+        datasets:[{label:'Tasks Due',data:computeWeeklyTodoOverview(),borderColor:'#7C3AED',backgroundColor:'rgba(124,58,237,0.15)',fill:true,tension:.4,pointRadius:3,pointBackgroundColor:'#7C3AED'}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-        scales:{y:{grid:{color:gridColor},ticks:{color:textColor}},x:{grid:{display:false},ticks:{color:textColor}}}}
+        scales:{y:{beginAtZero:true,ticks:{precision:0,color:textColor},grid:{color:gridColor}},x:{grid:{display:false},ticks:{color:textColor}}}}
     });
   }
   const ctx2 = document.getElementById('chart-priority');
@@ -2357,7 +2596,40 @@ async function initApp(){
   }
   sb.auth.onAuthStateChange((event, session)=>{
     if(event==='SIGNED_OUT'){ currentSession=null; renderAuthScreen(); }
+    // Supabase fires this when the user lands here via a password-reset email link — this was
+    // the missing half of "forgot password": the email sent fine, but nothing let them actually
+    // set a new one when they clicked the link, so it looked like the feature just didn't work.
+    if(event==='PASSWORD_RECOVERY'){ currentSession=session; renderSetNewPasswordScreen(); }
   });
+}
+function renderSetNewPasswordScreen(){
+  document.getElementById('app').classList.add('login-bg');
+  document.getElementById('app').innerHTML = `
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="auth-logo"><div class="logo-mark">Z</div><div><div class="t1" style="font-weight:800;font-size:15px;">Z SYSTEM</div><div class="t2" style="font-size:10px;color:var(--text-secondary);letter-spacing:1.5px;font-weight:600;">OPERATIONS CENTER</div></div></div>
+        <div class="auth-title">Set a new password</div>
+        <div class="auth-sub">You've clicked a valid reset link — choose a new password below.</div>
+        <div class="auth-error" id="auth-error"></div>
+        <div class="form-group"><label>New Password</label><input class="finput" type="password" id="new-pass-1" placeholder="••••••••"></div>
+        <div class="form-group"><label>Confirm Password</label><input class="finput" type="password" id="new-pass-2" placeholder="••••••••"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px;" onclick="handleSetNewPassword()">${icon('check')} Set Password &amp; Continue</button>
+      </div>
+    </div>
+  `;
+}
+async function handleSetNewPassword(){
+  const p1 = document.getElementById('new-pass-1').value;
+  const p2 = document.getElementById('new-pass-2').value;
+  const errEl = document.getElementById('auth-error');
+  if(!p1 || p1.length<6){ errEl.textContent='Password must be at least 6 characters.'; errEl.classList.add('show'); return; }
+  if(p1!==p2){ errEl.textContent='Passwords do not match.'; errEl.classList.add('show'); return; }
+  try{
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    if(error) throw error;
+    toast('Password updated - you are logged in.');
+    onAuthSuccess();
+  }catch(e){ errEl.textContent = e.message||'Could not update password.'; errEl.classList.add('show'); }
 }
 initApp();
 
